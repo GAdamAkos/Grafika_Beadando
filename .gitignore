@@ -1,0 +1,10 @@
+# Binaries
+*.exe
+*.o
+*.out
+
+# IDEs and OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
