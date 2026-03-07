@@ -12,7 +12,7 @@ endif
 CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude
 LDFLAGS = -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lglu32 -lm
 
-SRC = src/main.c src/camera.c
+SRC = src/main.c src/camera.c src/help.c src/texture.c
 
 all:
 	$(CC) $(CFLAGS) $(SRC) $(LDFLAGS) -o $(APP_NAME).exe
