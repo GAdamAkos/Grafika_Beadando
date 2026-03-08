@@ -7,6 +7,11 @@
 #include "camera.h"
 #include "help.h"
 
+// Tanári OBJ loader (static lib)
+#include "model.h"
+#include "load.h"
+#include "draw.h"
+
 static const int INITIAL_WIDTH = 800;
 static const int INITIAL_HEIGHT = 600;
 
@@ -43,53 +48,18 @@ static void apply_lighting(float intensity) {
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
 }
 
-static void draw_lit_cube(void) {
-    glPushMatrix();
-    glTranslatef(0.0f, 1.0f, 0.0f);
-    glScalef(2.0f, 2.0f, 2.0f);
+static void draw_grid(void) {
+    glDisable(GL_LIGHTING);
 
-    glColor3f(0.80f, 0.85f, 0.90f);
-
-    glBegin(GL_QUADS);
-
-    glNormal3f(0.f, 0.f, 1.f);
-    glVertex3f(-0.5f, -0.5f,  0.5f);
-    glVertex3f( 0.5f, -0.5f,  0.5f);
-    glVertex3f( 0.5f,  0.5f,  0.5f);
-    glVertex3f(-0.5f,  0.5f,  0.5f);
-
-    glNormal3f(0.f, 0.f, -1.f);
-    glVertex3f( 0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f,  0.5f, -0.5f);
-    glVertex3f( 0.5f,  0.5f, -0.5f);
-
-    glNormal3f(1.f, 0.f, 0.f);
-    glVertex3f( 0.5f, -0.5f,  0.5f);
-    glVertex3f( 0.5f, -0.5f, -0.5f);
-    glVertex3f( 0.5f,  0.5f, -0.5f);
-    glVertex3f( 0.5f,  0.5f,  0.5f);
-
-    glNormal3f(-1.f, 0.f, 0.f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f,  0.5f);
-    glVertex3f(-0.5f,  0.5f,  0.5f);
-    glVertex3f(-0.5f,  0.5f, -0.5f);
-
-    glNormal3f(0.f, 1.f, 0.f);
-    glVertex3f(-0.5f,  0.5f,  0.5f);
-    glVertex3f( 0.5f,  0.5f,  0.5f);
-    glVertex3f( 0.5f,  0.5f, -0.5f);
-    glVertex3f(-0.5f,  0.5f, -0.5f);
-
-    glNormal3f(0.f, -1.f, 0.f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f( 0.5f, -0.5f, -0.5f);
-    glVertex3f( 0.5f, -0.5f,  0.5f);
-    glVertex3f(-0.5f, -0.5f,  0.5f);
-
+    glBegin(GL_LINES);
+    for (int i = -20; i <= 20; i++) {
+        glColor3f(0.40f, 0.40f, 0.40f);
+        glVertex3f((float)i, 0.0f, -20.0f); glVertex3f((float)i, 0.0f, 20.0f);
+        glVertex3f(-20.0f, 0.0f, (float)i); glVertex3f(20.0f, 0.0f, (float)i);
+    }
     glEnd();
-    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
 }
 
 int main(int argc, char* argv[]) {
@@ -110,6 +80,10 @@ int main(int argc, char* argv[]) {
 
     bool show_help = false;
     HelpOverlay* help = NULL;
+
+    // OBJ model
+    Model obj_model;
+    init_model(&obj_model);
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -153,10 +127,16 @@ int main(int argc, char* argv[]) {
 
     setup_projection(window_w, window_h);
 
-    // Load help overlay image (BMP)
-    // Run from app/ -> assets is ../assets
+    // Help overlay BMP
     if (!help_init(&help, "../assets/textures/help.bmp")) {
         printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
+    }
+
+    // Load OBJ model (from assets)
+    if (load_model(&obj_model, "../assets/models/cube.obj") != TRUE) {
+        printf("WARNING: failed to load OBJ model: ../assets/models/cube.obj\n");
+    } else {
+        printf("OBJ loaded: %d triangles\n", obj_model.n_triangles);
     }
 
     Uint32 last_time = SDL_GetTicks();
@@ -222,19 +202,18 @@ int main(int argc, char* argv[]) {
         GLfloat light_pos[] = { 8.0f, 12.0f, 6.0f, 1.0f };
         glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
 
-        // Grid without lighting
-        glDisable(GL_LIGHTING);
-        glBegin(GL_LINES);
-        for (int i = -20; i <= 20; i++) {
-            glColor3f(0.40f, 0.40f, 0.40f);
-            glVertex3f((float)i, 0.0f, -20.0f); glVertex3f((float)i, 0.0f, 20.0f);
-            glVertex3f(-20.0f, 0.0f, (float)i); glVertex3f(20.0f, 0.0f, (float)i);
-        }
-        glEnd();
+        draw_grid();
 
-        // Cube with lighting
-        glEnable(GL_LIGHTING);
-        draw_lit_cube();
+        // Draw OBJ model (lit)
+        glPushMatrix();
+        glTranslatef(0.0f, 0.0f, 0.0f);
+        glScalef(1.0f, 1.0f, 1.0f);
+
+        // Give it a neutral color (until textures come next milestone)
+        glColor3f(0.85f, 0.85f, 0.90f);
+        draw_model(&obj_model);
+
+        glPopMatrix();
 
         // Help overlay on top
         if (show_help && help) {
@@ -245,6 +224,7 @@ int main(int argc, char* argv[]) {
     }
 
     help_destroy(help);
+    free_model(&obj_model);
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
