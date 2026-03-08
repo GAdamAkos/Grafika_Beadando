@@ -14,7 +14,7 @@ CFLAGS = -Wall -Wextra -Wpedantic -std=c99 \
 
 LDFLAGS = -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lglu32 -lm
 
-SRC = src/main.c src/camera.c src/help.c src/texture.c
+SRC = src/main.c src/camera.c src/help.c src/texture.c src/scene.c
 OBJ_SRC = ext/obj/src/model.c ext/obj/src/load.c ext/obj/src/info.c ext/obj/src/draw.c ext/obj/src/transform.c
 
 all:

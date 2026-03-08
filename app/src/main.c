@@ -6,12 +6,7 @@
 
 #include "camera.h"
 #include "help.h"
-#include "texture.h"
-
-// Course OBJ loader
-#include "model.h"
-#include "load.h"
-#include "draw.h"
+#include "scene.h"
 
 static const int INITIAL_WIDTH = 800;
 static const int INITIAL_HEIGHT = 600;
@@ -53,10 +48,10 @@ static void draw_grid(void) {
     glDisable(GL_LIGHTING);
 
     glBegin(GL_LINES);
-    for (int i = -20; i <= 20; i++) {
+    for (int i = -40; i <= 40; i++) {
         glColor3f(0.40f, 0.40f, 0.40f);
-        glVertex3f((float)i, 0.0f, -20.0f); glVertex3f((float)i, 0.0f, 20.0f);
-        glVertex3f(-20.0f, 0.0f, (float)i); glVertex3f(20.0f, 0.0f, (float)i);
+        glVertex3f((float)i, 0.0f, -40.0f); glVertex3f((float)i, 0.0f, 40.0f);
+        glVertex3f(-40.0f, 0.0f, (float)i); glVertex3f(40.0f, 0.0f, (float)i);
     }
     glEnd();
 
@@ -82,12 +77,7 @@ int main(int argc, char* argv[]) {
     bool show_help = false;
     HelpOverlay* help = NULL;
 
-    // OBJ model
-    Model obj_model;
-    init_model(&obj_model);
-
-    // Model texture
-    Texture model_tex = {0};
+    Scene* scene = NULL;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -129,19 +119,14 @@ int main(int argc, char* argv[]) {
     glEnable(GL_DEPTH_TEST);
     setup_projection(window_w, window_h);
 
-    // Help overlay BMP
+    // Help overlay BMP (museum-style)
     if (!help_init(&help, "../assets/textures/help.bmp")) {
         printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
     }
 
-    // Load OBJ model
-    if (load_model(&obj_model, "../assets/models/cube.obj") != TRUE) {
-        printf("WARNING: failed to load OBJ model: ../assets/models/cube.obj\n");
-    }
-
-    // Load model texture (BMP)
-    if (!load_texture_bmp(&model_tex, "../assets/textures/cube.bmp", false, 0, 0, 0)) {
-        printf("WARNING: failed to load model texture: ../assets/textures/cube.bmp\n");
+    // Scene from CSV (repetitive data moved out of code)
+    if (!scene_init(&scene, "../assets/scene.csv")) {
+        printf("WARNING: scene not loaded (missing ../assets/scene.csv)\n");
     }
 
     Uint32 last_time = SDL_GetTicks();
@@ -150,16 +135,20 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 is_running = false;
+
             } else if (event.type == SDL_KEYDOWN) {
                 SDL_Keycode key = event.key.keysym.sym;
 
-                if (key == SDLK_ESCAPE) is_running = false;
+                if (key == SDLK_ESCAPE) {
+                    is_running = false;
+                }
 
                 if (key == SDLK_F1) {
                     show_help = !show_help;
                     SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
                 }
 
+                // Keep +/- working, even if you "pause" it later
                 if (key == SDLK_PLUS || key == SDLK_KP_PLUS || key == SDLK_EQUALS) {
                     light_intensity += 0.1f;
                     if (light_intensity > 2.0f) light_intensity = 2.0f;
@@ -180,6 +169,7 @@ int main(int argc, char* argv[]) {
             } else if (event.type == SDL_WINDOWEVENT) {
                 if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
                     event.window.event == SDL_WINDOWEVENT_RESIZED) {
+
                     window_w = event.window.data1;
                     window_h = event.window.data2;
                     setup_projection(window_w, window_h);
@@ -207,26 +197,10 @@ int main(int argc, char* argv[]) {
 
         draw_grid();
 
-        // Draw OBJ model with texture
-        glPushMatrix();
-        glTranslatef(0.0f, 0.0f, 0.0f);
-
-        if (model_tex.id != 0) {
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, model_tex.id);
-
-            // Ensure texture draws as-is (not tinted)
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        // Draw scene objects (from CSV)
+        if (scene) {
+            scene_draw(scene);
         }
-
-        draw_model(&obj_model);
-
-        if (model_tex.id != 0) {
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-            glDisable(GL_TEXTURE_2D);
-        }
-
-        glPopMatrix();
 
         // Help overlay on top
         if (show_help && help) {
@@ -236,9 +210,8 @@ int main(int argc, char* argv[]) {
         SDL_GL_SwapWindow(window);
     }
 
+    scene_destroy(scene);
     help_destroy(help);
-    destroy_texture(&model_tex);
-    free_model(&obj_model);
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
