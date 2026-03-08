@@ -150,7 +150,6 @@ static void setup_fog(float density) {
 
     glEnable(GL_FOG);
 
-    // Match your clearColor for a smooth fade
     GLfloat fogColor[4] = { 0.08f, 0.08f, 0.12f, 1.0f };
     glFogfv(GL_FOG_COLOR, fogColor);
 
@@ -185,6 +184,9 @@ int main(int argc, char* argv[]) {
 
     // Fog state
     float fog_density = 0.05f;
+
+    // Debug grid toggle (default OFF for nicer look)
+    bool show_grid = false;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -226,7 +228,6 @@ int main(int argc, char* argv[]) {
     glEnable(GL_DEPTH_TEST);
     setup_projection(window_w, window_h);
 
-    // Fog init
     setup_fog(fog_density);
 
     if (!help_init(&help, "../assets/textures/help.bmp")) {
@@ -256,6 +257,12 @@ int main(int argc, char* argv[]) {
                     SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
                 }
 
+                // Debug grid toggle
+                if (key == SDLK_g && !show_help) {
+                    show_grid = !show_grid;
+                    printf("Debug grid: %s\n", show_grid ? "ON" : "OFF");
+                }
+
                 // Interact (E)
                 if (key == SDLK_e && !show_help) {
                     if (scene) {
@@ -272,18 +279,19 @@ int main(int argc, char* argv[]) {
                     if (light_intensity < 0.0f) light_intensity = 0.0f;
                 }
 
-                // Fog density adjust
+                // Fog density adjust (comma/period)
                 if (key == SDLK_COMMA) {
-                fog_density -= 0.002f;
-                if (fog_density < 0.0f) fog_density = 0.0f;
-                setup_fog(fog_density);
-                printf("Fog density: %.3f\n", fog_density);
+                    fog_density -= 0.002f;
+                    if (fog_density < 0.0f) fog_density = 0.0f;
+                    setup_fog(fog_density);
+                    printf("Fog density: %.3f\n", fog_density);
                 } else if (key == SDLK_PERIOD) {
                     fog_density += 0.002f;
                     if (fog_density > 0.15f) fog_density = 0.15f;
                     setup_fog(fog_density);
                     printf("Fog density: %.3f\n", fog_density);
                 }
+
             } else if (event.type == SDL_MOUSEMOTION) {
                 if (!show_help) {
                     camera.yaw += event.motion.xrel * camera.sensitivity;
@@ -341,7 +349,9 @@ int main(int argc, char* argv[]) {
         GLfloat light_pos[] = { 8.0f, 12.0f, 6.0f, 1.0f };
         glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
 
-        draw_grid();
+        if (show_grid) {
+            draw_grid();
+        }
 
         if (scene) {
             scene_draw(scene, picked);
