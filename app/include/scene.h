@@ -10,6 +10,11 @@ typedef struct Scene Scene;
 bool scene_init(Scene** out_scene, const char* csv_path);
 
 /**
+ * Per-frame scene update (animations).
+ */
+void scene_update(Scene* scene, double delta_time);
+
+/**
  * Draw scene, and optionally highlight the picked object (index, -1 = none).
  */
 void scene_draw(Scene* scene, int picked_index);

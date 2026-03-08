@@ -41,6 +41,8 @@ typedef struct SceneObject {
     float rx, ry, rz;
     float sx, sy, sz;
 
+    float base_px, base_py, base_pz;
+
     int state;
     AABB box;
 } SceneObject;
@@ -59,6 +61,9 @@ struct Scene {
     int obj_cap;
 
     int power_on;
+
+    float gate_open_amount;
+    float gate_target_amount;
 };
 
 static float deg_to_rad(float deg) { return deg * (float)M_PI / 180.0f; }
@@ -160,15 +165,42 @@ static bool parse_csv_line_v2(
     ) == 13);
 }
 
-static void scene_recompute_power(Scene* sc) {
-    int on = 0;
+static int count_active_switches(Scene* sc) {
+    int count = 0;
     for (int i = 0; i < sc->obj_count; i++) {
         if (str_ieq(sc->objects[i].type, "switch") && sc->objects[i].state == 1) {
-            on = 1;
-            break;
+            count++;
         }
     }
-    sc->power_on = on;
+    return count;
+}
+
+static void scene_recompute_power(Scene* sc) {
+    int active_switches = count_active_switches(sc);
+    sc->power_on = (active_switches > 0) ? 1 : 0;
+    sc->gate_target_amount = (active_switches >= 3) ? 2.2f : 0.0f;
+}
+
+static void update_gate_positions(Scene* sc) {
+    for (int i = 0; i < sc->obj_count; i++) {
+        SceneObject* o = &sc->objects[i];
+
+        if (!str_ieq(o->type, "gate")) {
+            continue;
+        }
+
+        o->px = o->base_px;
+        o->py = o->base_py;
+        o->pz = o->base_pz;
+
+        if (strcmp(o->id, "gate_left") == 0) {
+            o->px = o->base_px - sc->gate_open_amount;
+        } else if (strcmp(o->id, "gate_right") == 0) {
+            o->px = o->base_px + sc->gate_open_amount;
+        }
+
+        compute_object_aabb(o);
+    }
 }
 
 /* -------- Ray vs AABB (slabs) -------- */
@@ -229,17 +261,14 @@ static bool ray_aabb_hit(const float ox, const float oy, const float oz,
 static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
     if (!t || !t->loaded || t->tex.id == 0) return;
 
-    // Use repeat for ground
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, t->tex.id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-    // Ground extents from scale (sx,sz)
     float half_x = 0.5f * o->sx;
     float half_z = 0.5f * o->sz;
-
 
     float x0 = o->px - half_x;
     float x1 = o->px + half_x;
@@ -247,15 +276,15 @@ static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
     float z1 = o->pz + half_z;
     float y  = o->py;
 
-    float tile = 10.0f;     // több ismétlés -> kevésbé pixeles, szebb
-    float eps  = 0.01f;     // nagyobb bias -> kevésbé mintázza a széleket
-    float off  = 0.37f;     // offset -> ne pont a "szél" essen a varratra
+    float tile = 10.0f;
+    float eps  = 0.01f;
+    float off  = 0.37f;
 
     glBegin(GL_QUADS);
-    glTexCoord2f(off + eps,          off + eps);          glVertex3f(x0, y, z0);
-    glTexCoord2f(off + tile - eps,   off + eps);          glVertex3f(x1, y, z0);
-    glTexCoord2f(off + tile - eps,   off + tile - eps);   glVertex3f(x1, y, z1);
-    glTexCoord2f(off + eps,          off + tile - eps);   glVertex3f(x0, y, z1);
+    glTexCoord2f(off + eps,        off + eps);        glVertex3f(x0, y, z0);
+    glTexCoord2f(off + tile - eps, off + eps);        glVertex3f(x1, y, z0);
+    glTexCoord2f(off + tile - eps, off + tile - eps); glVertex3f(x1, y, z1);
+    glTexCoord2f(off + eps,        off + tile - eps); glVertex3f(x0, y, z1);
     glEnd();
 
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -278,6 +307,9 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
         fclose(f);
         return false;
     }
+
+    sc->gate_open_amount = 0.0f;
+    sc->gate_target_amount = 0.0f;
 
     char line[1024];
     int line_no = 0;
@@ -316,6 +348,10 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
         obj.rx = rx; obj.ry = ry; obj.rz = rz;
         obj.sx = sx; obj.sy = sy; obj.sz = sz;
 
+        obj.base_px = px;
+        obj.base_py = py;
+        obj.base_pz = pz;
+
         obj.state = 0;
 
         add_object(sc, obj);
@@ -340,11 +376,32 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
     }
 
     scene_recompute_power(sc);
+    update_gate_positions(sc);
 
     *out_scene = sc;
     printf("scene_init: objects=%d models=%d textures=%d power_on=%d\n",
            sc->obj_count, sc->model_count, sc->tex_count, sc->power_on);
     return true;
+}
+
+void scene_update(Scene* sc, double delta_time) {
+    if (!sc) return;
+
+    float speed = 2.4f * (float)delta_time;
+
+    if (sc->gate_open_amount < sc->gate_target_amount) {
+        sc->gate_open_amount += speed;
+        if (sc->gate_open_amount > sc->gate_target_amount) {
+            sc->gate_open_amount = sc->gate_target_amount;
+        }
+    } else if (sc->gate_open_amount > sc->gate_target_amount) {
+        sc->gate_open_amount -= speed;
+        if (sc->gate_open_amount < sc->gate_target_amount) {
+            sc->gate_open_amount = sc->gate_target_amount;
+        }
+    }
+
+    update_gate_positions(sc);
 }
 
 bool scene_collides(Scene* sc, const AABB* player_box) {
@@ -396,7 +453,14 @@ void scene_interact(Scene* sc, int picked_index) {
     if (str_ieq(o->type, "switch")) {
         o->state = (o->state == 0) ? 1 : 0;
         scene_recompute_power(sc);
-        printf("INTERACT: %s toggled -> %d (power_on=%d)\n", o->id, o->state, sc->power_on);
+
+        printf(
+            "INTERACT: %s toggled -> %d | active_switches=%d | gate_target=%.2f\n",
+            o->id,
+            o->state,
+            count_active_switches(sc),
+            sc->gate_target_amount
+        );
     }
 }
 
@@ -433,7 +497,6 @@ void scene_draw(Scene* sc, int picked_index) {
         ModelEntry* m = &sc->models[o->model_idx];
         TextureEntry* t = &sc->textures[o->tex_idx];
 
-        // Special: ground is a real plane with tiling UVs
         if (str_ieq(o->type, "ground")) {
             draw_ground_plane(t, o);
             continue;

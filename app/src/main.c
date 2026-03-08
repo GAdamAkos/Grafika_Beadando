@@ -316,6 +316,10 @@ int main(int argc, char* argv[]) {
         double delta_time = (current_time - last_time) / 1000.0;
         last_time = current_time;
 
+                if (scene) {
+            scene_update(scene, delta_time);
+            }
+
         if (!show_help) {
             float old_x = camera.x;
             float old_y = camera.y;
