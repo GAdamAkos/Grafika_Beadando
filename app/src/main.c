@@ -78,6 +78,71 @@ static AABB make_player_aabb(const Camera* cam) {
     return a;
 }
 
+static void begin_2d(int w, int h) {
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, w, h, 0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+}
+
+static void end_2d(void) {
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+}
+
+static void draw_crosshair(int w, int h) {
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    begin_2d(w, h);
+
+    float cx = w * 0.5f;
+    float cy = h * 0.5f;
+
+    float len = 6.0f;     // half length of each arm
+    float gap = 3.0f;     // gap at center
+
+    glColor4f(1.f, 1.f, 1.f, 0.75f);
+    glLineWidth(2.0f);
+
+    glBegin(GL_LINES);
+    // horizontal
+    glVertex2f(cx - gap - len, cy);
+    glVertex2f(cx - gap,       cy);
+
+    glVertex2f(cx + gap,       cy);
+    glVertex2f(cx + gap + len, cy);
+
+    // vertical
+    glVertex2f(cx, cy - gap - len);
+    glVertex2f(cx, cy - gap);
+
+    glVertex2f(cx, cy + gap);
+    glVertex2f(cx, cy + gap + len);
+    glEnd();
+
+    glLineWidth(1.0f);
+
+    end_2d();
+
+    glPopAttrib();
+}
+
 int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
@@ -168,14 +233,12 @@ int main(int argc, char* argv[]) {
                     SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
                 }
 
-                // Interact
                 if (key == SDLK_e && !show_help) {
                     if (scene) {
                         scene_interact(scene, picked);
                     }
                 }
 
-                // keep +/- (optional)
                 if (key == SDLK_PLUS || key == SDLK_KP_PLUS || key == SDLK_EQUALS) {
                     light_intensity += 0.1f;
                     if (light_intensity > 2.0f) light_intensity = 2.0f;
@@ -225,7 +288,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // Update picking each frame (crosshair)
         if (scene && !show_help) {
             picked = scene_pick(scene, &camera);
         } else {
@@ -250,6 +312,9 @@ int main(int argc, char* argv[]) {
 
         if (show_help && help) {
             help_draw(help, window_w, window_h);
+        } else {
+            // Only show crosshair during gameplay
+            draw_crosshair(window_w, window_h);
         }
 
         SDL_GL_SwapWindow(window);
@@ -262,4 +327,4 @@ int main(int argc, char* argv[]) {
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
-}
+}feat: add minimal center crosshair overlay
