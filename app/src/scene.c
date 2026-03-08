@@ -247,7 +247,7 @@ static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
     float z1 = o->pz + half_z;
     float y  = o->py;
 
-    float tile = 12.0f;     // több ismétlés -> kevésbé pixeles, szebb
+    float tile = 10.0f;     // több ismétlés -> kevésbé pixeles, szebb
     float eps  = 0.01f;     // nagyobb bias -> kevésbé mintázza a széleket
     float off  = 0.37f;     // offset -> ne pont a "szél" essen a varratra
 
