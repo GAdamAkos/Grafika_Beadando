@@ -60,12 +60,10 @@ static void draw_grid(void) {
 }
 
 static AABB make_player_aabb(const Camera* cam) {
-    // Simple player volume around camera position
     const float half_w = 0.25f;
     const float half_d = 0.25f;
     const float height = 1.7f;
 
-    // Camera eye height is cam->M, so the "feet" are at y - M
     float feet_y = cam->y - cam->M;
 
     AABB a;
@@ -100,6 +98,8 @@ int main(int argc, char* argv[]) {
     HelpOverlay* help = NULL;
 
     Scene* scene = NULL;
+
+    int picked = -1;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -168,7 +168,14 @@ int main(int argc, char* argv[]) {
                     SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
                 }
 
-                // keep +/- (even if you ignore it visually later)
+                // Interact
+                if (key == SDLK_e && !show_help) {
+                    if (scene) {
+                        scene_interact(scene, picked);
+                    }
+                }
+
+                // keep +/- (optional)
                 if (key == SDLK_PLUS || key == SDLK_KP_PLUS || key == SDLK_EQUALS) {
                     light_intensity += 0.1f;
                     if (light_intensity > 2.0f) light_intensity = 2.0f;
@@ -202,23 +209,27 @@ int main(int argc, char* argv[]) {
         last_time = current_time;
 
         if (!show_help) {
-            // Save old position
             float old_x = camera.x;
             float old_y = camera.y;
             float old_z = camera.z;
 
             update_camera(&camera, delta_time);
 
-            // Collision test at new position
             if (scene) {
                 AABB player = make_player_aabb(&camera);
                 if (scene_collides(scene, &player)) {
-                    // Revert movement
                     camera.x = old_x;
                     camera.y = old_y;
                     camera.z = old_z;
                 }
             }
+        }
+
+        // Update picking each frame (crosshair)
+        if (scene && !show_help) {
+            picked = scene_pick(scene, &camera);
+        } else {
+            picked = -1;
         }
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
@@ -234,7 +245,7 @@ int main(int argc, char* argv[]) {
         draw_grid();
 
         if (scene) {
-            scene_draw(scene);
+            scene_draw(scene, picked);
         }
 
         if (show_help && help) {

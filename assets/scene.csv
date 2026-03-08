@@ -1,5 +1,5 @@
-model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
-../assets/models/cube.obj,../assets/textures/cube.bmp,0,0,0,0,0,0,1,1,1
-../assets/models/cube.obj,../assets/textures/cube.bmp,3,0,0,0,0,0,1,1,1
-../assets/models/cube.obj,../assets/textures/cube.bmp,-3,0,0,0,0,0,1,1,1
-../assets/models/cube.obj,../assets/textures/cube.bmp,0,0,3,0,0,0,1,1,1
+id,type,model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
+switch_1,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,0,0,2,0,0,0,0.6,0.6,0.2
+lamp_1,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,0,1.2,2,0,0,0,0.2,0.2,0.2
+block_1,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,3,0,0,0,0,0,1,1,1
+block_2,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,-3,0,0,0,0,0,1,1,1

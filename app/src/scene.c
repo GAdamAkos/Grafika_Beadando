@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include <SDL2/SDL_opengl.h>
 
@@ -12,6 +13,10 @@
 #include "model.h"
 #include "load.h"
 #include "draw.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 typedef struct ModelEntry {
     char path[260];
@@ -26,6 +31,9 @@ typedef struct TextureEntry {
 } TextureEntry;
 
 typedef struct SceneObject {
+    char id[64];
+    char type[32];
+
     int model_idx;
     int tex_idx;
 
@@ -33,7 +41,8 @@ typedef struct SceneObject {
     float rx, ry, rz;
     float sx, sy, sz;
 
-    AABB box; // collision box
+    int state;   // for switches: 0/1
+    AABB box;    // collision + picking
 } SceneObject;
 
 struct Scene {
@@ -48,12 +57,34 @@ struct Scene {
     SceneObject* objects;
     int obj_count;
     int obj_cap;
+
+    int power_on; // derived: 1 if any switch state==1
 };
+
+static float deg_to_rad(float deg) {
+    return deg * (float)M_PI / 180.0f;
+}
 
 static void trim_line(char* s) {
     size_t n = strlen(s);
     while (n > 0 && (s[n-1] == '\n' || s[n-1] == '\r' || s[n-1] == ' ' || s[n-1] == '\t'))
         s[--n] = '\0';
+}
+
+static int str_ieq(const char* a, const char* b) {
+    while (*a && *b) {
+        char ca = *a, cb = *b;
+        if (ca >= 'A' && ca <= 'Z') ca = (char)(ca - 'A' + 'a');
+        if (cb >= 'A' && cb <= 'Z') cb = (char)(cb - 'A' + 'a');
+        if (ca != cb) return 0;
+        a++; b++;
+    }
+    return (*a == '\0' && *b == '\0');
+}
+
+static int is_interactable_type(const char* type) {
+    // You can add more later: door, panel, terminal...
+    return str_ieq(type, "switch");
 }
 
 static int find_or_add_model(Scene* sc, const char* path) {
@@ -92,7 +123,6 @@ static int find_or_add_texture(Scene* sc, const char* path) {
 
 static void compute_object_aabb(SceneObject* o) {
     // Simple unit-cube bounds scaled and positioned.
-    // Base cube assumed centered at (0,0,0) with size 1 (min=-0.5 max=0.5).
     float hx = 0.5f * o->sx;
     float hy = 0.5f * o->sy;
     float hz = 0.5f * o->sz;
@@ -117,18 +147,92 @@ static void add_object(Scene* sc, SceneObject obj) {
     sc->objects[sc->obj_count++] = obj;
 }
 
-static bool parse_csv_line(const char* line, char* model_path, char* tex_path,
-                           float* px,float* py,float* pz,
-                           float* rx,float* ry,float* rz,
-                           float* sx,float* sy,float* sz) {
+static bool parse_csv_line_v2(
+    const char* line,
+    char* out_id, char* out_type,
+    char* out_model_path, char* out_tex_path,
+    float* px,float* py,float* pz,
+    float* rx,float* ry,float* rz,
+    float* sx,float* sy,float* sz
+) {
+    // id,type,model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
     return (sscanf(line,
-        " %259[^,] , %259[^,] , %f , %f , %f , %f , %f , %f , %f , %f , %f ",
-        model_path, tex_path,
+        " %63[^,] , %31[^,] , %259[^,] , %259[^,] , %f , %f , %f , %f , %f , %f , %f , %f , %f ",
+        out_id, out_type, out_model_path, out_tex_path,
         px, py, pz,
         rx, ry, rz,
         sx, sy, sz
-    ) == 11);
+    ) == 13);
 }
+
+static void scene_recompute_power(Scene* sc) {
+    int on = 0;
+    for (int i = 0; i < sc->obj_count; i++) {
+        if (str_ieq(sc->objects[i].type, "switch") && sc->objects[i].state == 1) {
+            on = 1;
+            break;
+        }
+    }
+    sc->power_on = on;
+}
+
+/* -------- Ray vs AABB (slabs) -------- */
+
+static bool ray_aabb_hit(const float ox, const float oy, const float oz,
+                         const float dx, const float dy, const float dz,
+                         const AABB* b, float* out_t) {
+    const float EPS = 1e-6f;
+
+    float tmin = -1e30f;
+    float tmax =  1e30f;
+
+    // X
+    if (fabsf(dx) < EPS) {
+        if (ox < b->min_x || ox > b->max_x) return false;
+    } else {
+        float inv = 1.0f / dx;
+        float t1 = (b->min_x - ox) * inv;
+        float t2 = (b->max_x - ox) * inv;
+        if (t1 > t2) { float tmp = t1; t1 = t2; t2 = tmp; }
+        if (t1 > tmin) tmin = t1;
+        if (t2 < tmax) tmax = t2;
+        if (tmin > tmax) return false;
+    }
+
+    // Y
+    if (fabsf(dy) < EPS) {
+        if (oy < b->min_y || oy > b->max_y) return false;
+    } else {
+        float inv = 1.0f / dy;
+        float t1 = (b->min_y - oy) * inv;
+        float t2 = (b->max_y - oy) * inv;
+        if (t1 > t2) { float tmp = t1; t1 = t2; t2 = tmp; }
+        if (t1 > tmin) tmin = t1;
+        if (t2 < tmax) tmax = t2;
+        if (tmin > tmax) return false;
+    }
+
+    // Z
+    if (fabsf(dz) < EPS) {
+        if (oz < b->min_z || oz > b->max_z) return false;
+    } else {
+        float inv = 1.0f / dz;
+        float t1 = (b->min_z - oz) * inv;
+        float t2 = (b->max_z - oz) * inv;
+        if (t1 > t2) { float tmp = t1; t1 = t2; t2 = tmp; }
+        if (t1 > tmin) tmin = t1;
+        if (t2 < tmax) tmax = t2;
+        if (tmin > tmax) return false;
+    }
+
+    float t = (tmin >= 0.0f) ? tmin : tmax;
+    if (t < 0.0f) return false;
+
+    if (out_t) *out_t = t;
+    return true;
+}
+
+/* -------- Public API -------- */
 
 bool scene_init(Scene** out_scene, const char* csv_path) {
     if (!out_scene) return false;
@@ -154,15 +258,14 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
         if (line[0] == '\0') continue;
         if (line[0] == '#') continue;
 
-        if (strstr(line, "model") && strstr(line, "texture") && line_no == 1) {
+        if (line_no == 1 && strstr(line, "id") && strstr(line, "type") && strstr(line, "model")) {
             continue;
         }
 
-        char model_path[260];
-        char tex_path[260];
+        char id[64], type[32], model_path[260], tex_path[260];
         float px,py,pz,rx,ry,rz,sx,sy,sz;
 
-        if (!parse_csv_line(line, model_path, tex_path, &px,&py,&pz,&rx,&ry,&rz,&sx,&sy,&sz)) {
+        if (!parse_csv_line_v2(line, id, type, model_path, tex_path, &px,&py,&pz,&rx,&ry,&rz,&sx,&sy,&sz)) {
             printf("scene_init: CSV parse error at line %d: %s\n", line_no, line);
             continue;
         }
@@ -171,11 +274,19 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
         int tidx = find_or_add_texture(sc, tex_path);
 
         SceneObject obj;
+        memset(&obj, 0, sizeof(obj));
+
+        strncpy(obj.id, id, sizeof(obj.id)-1);
+        strncpy(obj.type, type, sizeof(obj.type)-1);
+
         obj.model_idx = midx;
         obj.tex_idx = tidx;
+
         obj.px = px; obj.py = py; obj.pz = pz;
         obj.rx = rx; obj.ry = ry; obj.rz = rz;
         obj.sx = sx; obj.sy = sy; obj.sz = sz;
+
+        obj.state = 0;
 
         add_object(sc, obj);
     }
@@ -198,12 +309,105 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
         }
     }
 
+    scene_recompute_power(sc);
+
     *out_scene = sc;
-    printf("scene_init: objects=%d models=%d textures=%d\n", sc->obj_count, sc->model_count, sc->tex_count);
+    printf("scene_init: objects=%d models=%d textures=%d power_on=%d\n",
+           sc->obj_count, sc->model_count, sc->tex_count, sc->power_on);
     return true;
 }
 
-void scene_draw(Scene* sc) {
+bool scene_collides(Scene* sc, const AABB* player_box) {
+    if (!sc || !player_box) return false;
+
+    for (int i = 0; i < sc->obj_count; i++) {
+        if (str_ieq(sc->objects[i].type, "lamp")) continue;
+
+        if (aabb_intersects(&sc->objects[i].box, player_box)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int scene_pick(Scene* sc, const Camera* cam) {
+    if (!sc || !cam) return -1;
+
+    float ox = cam->x;
+    float oy = cam->y;
+    float oz = cam->z;
+
+    float yaw = deg_to_rad(cam->yaw);
+    float pitch = deg_to_rad(cam->pitch);
+
+    float dx = cosf(pitch) * cosf(yaw);
+    float dy = sinf(pitch);
+    float dz = cosf(pitch) * sinf(yaw);
+
+    int best_i = -1;
+    float best_t = 1e30f;
+
+    for (int i = 0; i < sc->obj_count; i++) {
+        // Only pick interactable objects (so highlight is meaningful)
+        if (!is_interactable_type(sc->objects[i].type)) {
+            continue;
+        }
+
+        float t = 0.0f;
+        if (ray_aabb_hit(ox, oy, oz, dx, dy, dz, &sc->objects[i].box, &t)) {
+            if (t < best_t) {
+                best_t = t;
+                best_i = i;
+            }
+        }
+    }
+
+    if (best_i != -1 && best_t > 8.0f) {
+        return -1;
+    }
+
+    return best_i;
+}
+
+void scene_interact(Scene* sc, int picked_index) {
+    if (!sc) return;
+    if (picked_index < 0 || picked_index >= sc->obj_count) return;
+
+    SceneObject* o = &sc->objects[picked_index];
+
+    if (str_ieq(o->type, "switch")) {
+        o->state = (o->state == 0) ? 1 : 0;
+        scene_recompute_power(sc);
+        printf("INTERACT: %s toggled -> %d (power_on=%d)\n", o->id, o->state, sc->power_on);
+    }
+}
+
+static void draw_aabb_lines(const AABB* b) {
+    float x0 = b->min_x, x1 = b->max_x;
+    float y0 = b->min_y, y1 = b->max_y;
+    float z0 = b->min_z, z1 = b->max_z;
+
+    glBegin(GL_LINES);
+
+    glVertex3f(x0,y0,z0); glVertex3f(x1,y0,z0);
+    glVertex3f(x1,y0,z0); glVertex3f(x1,y0,z1);
+    glVertex3f(x1,y0,z1); glVertex3f(x0,y0,z1);
+    glVertex3f(x0,y0,z1); glVertex3f(x0,y0,z0);
+
+    glVertex3f(x0,y1,z0); glVertex3f(x1,y1,z0);
+    glVertex3f(x1,y1,z0); glVertex3f(x1,y1,z1);
+    glVertex3f(x1,y1,z1); glVertex3f(x0,y1,z1);
+    glVertex3f(x0,y1,z1); glVertex3f(x0,y1,z0);
+
+    glVertex3f(x0,y0,z0); glVertex3f(x0,y1,z0);
+    glVertex3f(x1,y0,z0); glVertex3f(x1,y1,z0);
+    glVertex3f(x1,y0,z1); glVertex3f(x1,y1,z1);
+    glVertex3f(x0,y0,z1); glVertex3f(x0,y1,z1);
+
+    glEnd();
+}
+
+void scene_draw(Scene* sc, int picked_index) {
     if (!sc) return;
 
     for (int i = 0; i < sc->obj_count; i++) {
@@ -219,34 +423,40 @@ void scene_draw(Scene* sc) {
         glRotatef(o->rz, 0.f, 0.f, 1.f);
         glScalef(o->sx, o->sy, o->sz);
 
-        if (t->loaded && t->tex.id != 0) {
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, t->tex.id);
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-        }
-
-        if (m->loaded) {
-            draw_model(&m->model);
-        }
-
-        if (t->loaded && t->tex.id != 0) {
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        if (str_ieq(o->type, "lamp") && sc->power_on) {
             glDisable(GL_TEXTURE_2D);
+            glDisable(GL_LIGHTING);
+            glColor3f(1.0f, 0.95f, 0.60f);
+            if (m->loaded) draw_model(&m->model);
+            glEnable(GL_LIGHTING);
+        } else {
+            if (t->loaded && t->tex.id != 0) {
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, t->tex.id);
+                glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+            }
+
+            if (m->loaded) {
+                draw_model(&m->model);
+            }
+
+            if (t->loaded && t->tex.id != 0) {
+                glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+                glDisable(GL_TEXTURE_2D);
+            }
         }
 
         glPopMatrix();
-    }
-}
 
-bool scene_collides(Scene* sc, const AABB* player_box) {
-    if (!sc || !player_box) return false;
-
-    for (int i = 0; i < sc->obj_count; i++) {
-        if (aabb_intersects(&sc->objects[i].box, player_box)) {
-            return true;
+        // Highlight only if it's interactable
+        if (i == picked_index && is_interactable_type(o->type)) {
+            glDisable(GL_TEXTURE_2D);
+            glDisable(GL_LIGHTING);
+            glColor3f(1.f, 1.f, 1.f);
+            draw_aabb_lines(&o->box);
+            glEnable(GL_LIGHTING);
         }
     }
-    return false;
 }
 
 void scene_destroy(Scene* sc) {
