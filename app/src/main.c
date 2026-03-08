@@ -6,8 +6,9 @@
 
 #include "camera.h"
 #include "help.h"
+#include "texture.h"
 
-// Tanári OBJ loader (static lib)
+// Course OBJ loader
 #include "model.h"
 #include "load.h"
 #include "draw.h"
@@ -85,6 +86,9 @@ int main(int argc, char* argv[]) {
     Model obj_model;
     init_model(&obj_model);
 
+    // Model texture
+    Texture model_tex = {0};
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return 1;
@@ -117,14 +121,12 @@ int main(int argc, char* argv[]) {
     }
 
     SDL_GL_SetSwapInterval(1);
-
     SDL_GetWindowSize(window, &window_w, &window_h);
 
     init_camera(&camera);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     glEnable(GL_DEPTH_TEST);
-
     setup_projection(window_w, window_h);
 
     // Help overlay BMP
@@ -132,11 +134,14 @@ int main(int argc, char* argv[]) {
         printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
     }
 
-    // Load OBJ model (from assets)
+    // Load OBJ model
     if (load_model(&obj_model, "../assets/models/cube.obj") != TRUE) {
         printf("WARNING: failed to load OBJ model: ../assets/models/cube.obj\n");
-    } else {
-        printf("OBJ loaded: %d triangles\n", obj_model.n_triangles);
+    }
+
+    // Load model texture (BMP)
+    if (!load_texture_bmp(&model_tex, "../assets/textures/cube.bmp", false, 0, 0, 0)) {
+        printf("WARNING: failed to load model texture: ../assets/textures/cube.bmp\n");
     }
 
     Uint32 last_time = SDL_GetTicks();
@@ -148,9 +153,7 @@ int main(int argc, char* argv[]) {
             } else if (event.type == SDL_KEYDOWN) {
                 SDL_Keycode key = event.key.keysym.sym;
 
-                if (key == SDLK_ESCAPE) {
-                    is_running = false;
-                }
+                if (key == SDLK_ESCAPE) is_running = false;
 
                 if (key == SDLK_F1) {
                     show_help = !show_help;
@@ -204,14 +207,24 @@ int main(int argc, char* argv[]) {
 
         draw_grid();
 
-        // Draw OBJ model (lit)
+        // Draw OBJ model with texture
         glPushMatrix();
         glTranslatef(0.0f, 0.0f, 0.0f);
-        glScalef(1.0f, 1.0f, 1.0f);
 
-        // Give it a neutral color (until textures come next milestone)
-        glColor3f(0.85f, 0.85f, 0.90f);
+        if (model_tex.id != 0) {
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, model_tex.id);
+
+            // Ensure texture draws as-is (not tinted)
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        }
+
         draw_model(&obj_model);
+
+        if (model_tex.id != 0) {
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            glDisable(GL_TEXTURE_2D);
+        }
 
         glPopMatrix();
 
@@ -224,6 +237,7 @@ int main(int argc, char* argv[]) {
     }
 
     help_destroy(help);
+    destroy_texture(&model_tex);
     free_model(&obj_model);
 
     SDL_GL_DeleteContext(gl_context);
