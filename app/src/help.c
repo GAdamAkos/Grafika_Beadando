@@ -50,8 +50,8 @@ bool help_init(HelpOverlay** out_help, const char* bmp_path) {
     // You can set these manually to the BMP dimensions you created (recommended).
     // This helps aspect-ratio scaling.
     // Example: 1280x720 or 1024x768 etc.
-    h->img_w = 1536;
-    h->img_h = 1024;
+    h->img_w = h->tex.width;
+    h->img_h = h->tex.height;
 
     *out_help = h;
     return true;
@@ -98,9 +98,13 @@ void help_draw(HelpOverlay* help, int window_w, int window_h) {
     float x = ((float)window_w - draw_w) * 0.5f;
     float y = ((float)window_h - draw_h) * 0.5f;
 
+
     // Draw textured quad
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, help->tex.id);
+
+    // Force texture to render with its own colors (no tinting)
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
     glColor4f(1.f, 1.f, 1.f, 1.f);
 
@@ -111,10 +115,12 @@ void help_draw(HelpOverlay* help, int window_w, int window_h) {
     glTexCoord2f(0.f, 1.f); glVertex2f(x,         y + draw_h);
     glEnd();
 
+    // Restore default behavior for other textured draws later
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
     glDisable(GL_TEXTURE_2D);
 
     end_2d();
-
     glPopAttrib();
 }
 
