@@ -12,10 +12,12 @@ typedef struct Texture {
 } Texture;
 
 /**
- * Load a BMP as an OpenGL RGBA texture.
- * Supports optional color-key transparency (e.g., magenta 255,0,255).
+ * Load a BMP texture with optional color keying.
+ * - path: relative/absolute path to BMP
+ * - use_color_key: if true, pixels matching (r,g,b) become fully transparent (only for 32-bit upload)
+ * - r,g,b: color key target
  */
-bool load_texture_bmp(Texture* out_tex, const char* path, bool use_color_key, Uint8 key_r, Uint8 key_g, Uint8 key_b);
+bool load_texture_bmp(Texture* out, const char* path, bool use_color_key, Uint8 r, Uint8 g, Uint8 b);
 
 void destroy_texture(Texture* tex);
 

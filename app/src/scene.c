@@ -41,8 +41,8 @@ typedef struct SceneObject {
     float rx, ry, rz;
     float sx, sy, sz;
 
-    int state;   // for switches: 0/1
-    AABB box;    // collision + picking
+    int state;
+    AABB box;
 } SceneObject;
 
 struct Scene {
@@ -58,12 +58,10 @@ struct Scene {
     int obj_count;
     int obj_cap;
 
-    int power_on; // derived: 1 if any switch state==1
+    int power_on;
 };
 
-static float deg_to_rad(float deg) {
-    return deg * (float)M_PI / 180.0f;
-}
+static float deg_to_rad(float deg) { return deg * (float)M_PI / 180.0f; }
 
 static void trim_line(char* s) {
     size_t n = strlen(s);
@@ -83,7 +81,6 @@ static int str_ieq(const char* a, const char* b) {
 }
 
 static int is_interactable_type(const char* type) {
-    // You can add more later: door, panel, terminal...
     return str_ieq(type, "switch");
 }
 
@@ -122,7 +119,6 @@ static int find_or_add_texture(Scene* sc, const char* path) {
 }
 
 static void compute_object_aabb(SceneObject* o) {
-    // Simple unit-cube bounds scaled and positioned.
     float hx = 0.5f * o->sx;
     float hy = 0.5f * o->sy;
     float hz = 0.5f * o->sz;
@@ -155,7 +151,6 @@ static bool parse_csv_line_v2(
     float* rx,float* ry,float* rz,
     float* sx,float* sy,float* sz
 ) {
-    // id,type,model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
     return (sscanf(line,
         " %63[^,] , %31[^,] , %259[^,] , %259[^,] , %f , %f , %f , %f , %f , %f , %f , %f , %f ",
         out_id, out_type, out_model_path, out_tex_path,
@@ -186,7 +181,6 @@ static bool ray_aabb_hit(const float ox, const float oy, const float oz,
     float tmin = -1e30f;
     float tmax =  1e30f;
 
-    // X
     if (fabsf(dx) < EPS) {
         if (ox < b->min_x || ox > b->max_x) return false;
     } else {
@@ -199,7 +193,6 @@ static bool ray_aabb_hit(const float ox, const float oy, const float oz,
         if (tmin > tmax) return false;
     }
 
-    // Y
     if (fabsf(dy) < EPS) {
         if (oy < b->min_y || oy > b->max_y) return false;
     } else {
@@ -212,7 +205,6 @@ static bool ray_aabb_hit(const float ox, const float oy, const float oz,
         if (tmin > tmax) return false;
     }
 
-    // Z
     if (fabsf(dz) < EPS) {
         if (oz < b->min_z || oz > b->max_z) return false;
     } else {
@@ -230,6 +222,44 @@ static bool ray_aabb_hit(const float ox, const float oy, const float oz,
 
     if (out_t) *out_t = t;
     return true;
+}
+
+/* -------- Ground plane draw (tileable) -------- */
+
+static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
+    if (!t || !t->loaded || t->tex.id == 0) return;
+
+    // Use repeat for ground
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, t->tex.id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+    // Ground extents from scale (sx,sz)
+    float half_x = 0.5f * o->sx;
+    float half_z = 0.5f * o->sz;
+
+
+    float x0 = o->px - half_x;
+    float x1 = o->px + half_x;
+    float z0 = o->pz - half_z;
+    float z1 = o->pz + half_z;
+    float y  = o->py;
+
+    float tile = 12.0f;     // több ismétlés -> kevésbé pixeles, szebb
+    float eps  = 0.01f;     // nagyobb bias -> kevésbé mintázza a széleket
+    float off  = 0.37f;     // offset -> ne pont a "szél" essen a varratra
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(off + eps,          off + eps);          glVertex3f(x0, y, z0);
+    glTexCoord2f(off + tile - eps,   off + eps);          glVertex3f(x1, y, z0);
+    glTexCoord2f(off + tile - eps,   off + tile - eps);   glVertex3f(x1, y, z1);
+    glTexCoord2f(off + eps,          off + tile - eps);   glVertex3f(x0, y, z1);
+    glEnd();
+
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glDisable(GL_TEXTURE_2D);
 }
 
 /* -------- Public API -------- */
@@ -322,10 +352,9 @@ bool scene_collides(Scene* sc, const AABB* player_box) {
 
     for (int i = 0; i < sc->obj_count; i++) {
         if (str_ieq(sc->objects[i].type, "lamp")) continue;
+        if (str_ieq(sc->objects[i].type, "ground")) continue;
 
-        if (aabb_intersects(&sc->objects[i].box, player_box)) {
-            return true;
-        }
+        if (aabb_intersects(&sc->objects[i].box, player_box)) return true;
     }
     return false;
 }
@@ -333,9 +362,7 @@ bool scene_collides(Scene* sc, const AABB* player_box) {
 int scene_pick(Scene* sc, const Camera* cam) {
     if (!sc || !cam) return -1;
 
-    float ox = cam->x;
-    float oy = cam->y;
-    float oz = cam->z;
+    float ox = cam->x, oy = cam->y, oz = cam->z;
 
     float yaw = deg_to_rad(cam->yaw);
     float pitch = deg_to_rad(cam->pitch);
@@ -348,24 +375,15 @@ int scene_pick(Scene* sc, const Camera* cam) {
     float best_t = 1e30f;
 
     for (int i = 0; i < sc->obj_count; i++) {
-        // Only pick interactable objects (so highlight is meaningful)
-        if (!is_interactable_type(sc->objects[i].type)) {
-            continue;
-        }
+        if (!is_interactable_type(sc->objects[i].type)) continue;
 
         float t = 0.0f;
         if (ray_aabb_hit(ox, oy, oz, dx, dy, dz, &sc->objects[i].box, &t)) {
-            if (t < best_t) {
-                best_t = t;
-                best_i = i;
-            }
+            if (t < best_t) { best_t = t; best_i = i; }
         }
     }
 
-    if (best_i != -1 && best_t > 8.0f) {
-        return -1;
-    }
-
+    if (best_i != -1 && best_t > 8.0f) return -1;
     return best_i;
 }
 
@@ -415,6 +433,12 @@ void scene_draw(Scene* sc, int picked_index) {
         ModelEntry* m = &sc->models[o->model_idx];
         TextureEntry* t = &sc->textures[o->tex_idx];
 
+        // Special: ground is a real plane with tiling UVs
+        if (str_ieq(o->type, "ground")) {
+            draw_ground_plane(t, o);
+            continue;
+        }
+
         glPushMatrix();
 
         glTranslatef(o->px, o->py, o->pz);
@@ -436,9 +460,7 @@ void scene_draw(Scene* sc, int picked_index) {
                 glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
             }
 
-            if (m->loaded) {
-                draw_model(&m->model);
-            }
+            if (m->loaded) draw_model(&m->model);
 
             if (t->loaded && t->tex.id != 0) {
                 glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -448,7 +470,6 @@ void scene_draw(Scene* sc, int picked_index) {
 
         glPopMatrix();
 
-        // Highlight only if it's interactable
         if (i == picked_index && is_interactable_type(o->type)) {
             glDisable(GL_TEXTURE_2D);
             glDisable(GL_LIGHTING);
@@ -462,12 +483,8 @@ void scene_draw(Scene* sc, int picked_index) {
 void scene_destroy(Scene* sc) {
     if (!sc) return;
 
-    for (int i = 0; i < sc->model_count; i++) {
-        free_model(&sc->models[i].model);
-    }
-    for (int i = 0; i < sc->tex_count; i++) {
-        destroy_texture(&sc->textures[i].tex);
-    }
+    for (int i = 0; i < sc->model_count; i++) free_model(&sc->models[i].model);
+    for (int i = 0; i < sc->tex_count; i++) destroy_texture(&sc->textures[i].tex);
 
     free(sc->models);
     free(sc->textures);

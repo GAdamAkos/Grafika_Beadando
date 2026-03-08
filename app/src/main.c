@@ -21,7 +21,7 @@ static void setup_projection(int window_w, int window_h) {
     glLoadIdentity();
 
     float aspect = (float)window_w / (float)window_h;
-    gluPerspective(60.0, aspect, 0.1, 1000.0);
+    gluPerspective(60.0, aspect, 0.5, 1000.0);
 
     glMatrixMode(GL_MODELVIEW);
 }
