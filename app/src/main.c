@@ -34,9 +34,9 @@ static void apply_lighting(float intensity) {
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
 
-    GLfloat specular[] = { 0.25f * intensity, 0.25f * intensity, 0.25f * intensity, 1.0f };
+    GLfloat specular[]  = { 0.25f * intensity, 0.25f * intensity, 0.25f * intensity, 1.0f };
     GLfloat shininess[] = { 24.0f };
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 
     GLfloat ambient[] = { 0.12f * intensity, 0.12f * intensity, 0.12f * intensity, 1.0f };
@@ -78,6 +78,8 @@ static AABB make_player_aabb(const Camera* cam) {
     return a;
 }
 
+/* ---------------- 2D overlay helpers (crosshair) ---------------- */
+
 static void begin_2d(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -114,21 +116,19 @@ static void draw_crosshair(int w, int h) {
     float cx = w * 0.5f;
     float cy = h * 0.5f;
 
-    float len = 6.0f;     // half length of each arm
-    float gap = 3.0f;     // gap at center
+    float len = 6.0f;
+    float gap = 3.0f;
 
     glColor4f(1.f, 1.f, 1.f, 0.75f);
     glLineWidth(2.0f);
 
     glBegin(GL_LINES);
-    // horizontal
     glVertex2f(cx - gap - len, cy);
     glVertex2f(cx - gap,       cy);
 
     glVertex2f(cx + gap,       cy);
     glVertex2f(cx + gap + len, cy);
 
-    // vertical
     glVertex2f(cx, cy - gap - len);
     glVertex2f(cx, cy - gap);
 
@@ -141,6 +141,23 @@ static void draw_crosshair(int w, int h) {
     end_2d();
 
     glPopAttrib();
+}
+
+/* ---------------- Fog ---------------- */
+
+static void setup_fog(float density) {
+    if (density < 0.0f) density = 0.0f;
+
+    glEnable(GL_FOG);
+
+    // Match your clearColor for a smooth fade
+    GLfloat fogColor[4] = { 0.08f, 0.08f, 0.12f, 1.0f };
+    glFogfv(GL_FOG_COLOR, fogColor);
+
+    glFogi(GL_FOG_MODE, GL_EXP2);
+    glFogf(GL_FOG_DENSITY, density);
+
+    glHint(GL_FOG_HINT, GL_NICEST);
 }
 
 int main(int argc, char* argv[]) {
@@ -165,6 +182,9 @@ int main(int argc, char* argv[]) {
     Scene* scene = NULL;
 
     int picked = -1;
+
+    // Fog state
+    float fog_density = 0.05f;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -206,6 +226,9 @@ int main(int argc, char* argv[]) {
     glEnable(GL_DEPTH_TEST);
     setup_projection(window_w, window_h);
 
+    // Fog init
+    setup_fog(fog_density);
+
     if (!help_init(&help, "../assets/textures/help.bmp")) {
         printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
     }
@@ -233,12 +256,14 @@ int main(int argc, char* argv[]) {
                     SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
                 }
 
+                // Interact (E)
                 if (key == SDLK_e && !show_help) {
                     if (scene) {
                         scene_interact(scene, picked);
                     }
                 }
 
+                // Light intensity (optional)
                 if (key == SDLK_PLUS || key == SDLK_KP_PLUS || key == SDLK_EQUALS) {
                     light_intensity += 0.1f;
                     if (light_intensity > 2.0f) light_intensity = 2.0f;
@@ -247,6 +272,18 @@ int main(int argc, char* argv[]) {
                     if (light_intensity < 0.0f) light_intensity = 0.0f;
                 }
 
+                // Fog density adjust
+                if (key == SDLK_COMMA) {
+                fog_density -= 0.002f;
+                if (fog_density < 0.0f) fog_density = 0.0f;
+                setup_fog(fog_density);
+                printf("Fog density: %.3f\n", fog_density);
+                } else if (key == SDLK_PERIOD) {
+                    fog_density += 0.002f;
+                    if (fog_density > 0.15f) fog_density = 0.15f;
+                    setup_fog(fog_density);
+                    printf("Fog density: %.3f\n", fog_density);
+                }
             } else if (event.type == SDL_MOUSEMOTION) {
                 if (!show_help) {
                     camera.yaw += event.motion.xrel * camera.sensitivity;
@@ -313,7 +350,6 @@ int main(int argc, char* argv[]) {
         if (show_help && help) {
             help_draw(help, window_w, window_h);
         } else {
-            // Only show crosshair during gameplay
             draw_crosshair(window_w, window_h);
         }
 
@@ -327,4 +363,4 @@ int main(int argc, char* argv[]) {
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
-}feat: add minimal center crosshair overlay
+}
