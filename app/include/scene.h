@@ -37,4 +37,20 @@ int scene_pick(Scene* scene, const Camera* cam);
  */
 void scene_interact(Scene* scene, int picked_index);
 
+/**
+ * Returns the number of currently active lamp lights.
+ */
+int scene_get_dynamic_light_count(Scene* scene);
+
+/**
+ * Query active lamp light data by active index.
+ * Returns true if the given active light exists.
+ */
+bool scene_get_dynamic_light(
+    Scene* scene,
+    int active_index,
+    float* x, float* y, float* z,
+    float* intensity
+);
+
 #endif

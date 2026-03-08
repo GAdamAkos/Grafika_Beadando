@@ -44,6 +44,64 @@ static void apply_lighting(float intensity) {
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
 }
+static void apply_dynamic_lights(Scene* scene, float master_intensity) {
+    GLenum light_ids[3] = { GL_LIGHT1, GL_LIGHT2, GL_LIGHT3 };
+
+    for (int i = 0; i < 3; i++) {
+        glDisable(light_ids[i]);
+    }
+
+    if (!scene) {
+        return;
+    }
+
+    {
+        int active_count = scene_get_dynamic_light_count(scene);
+        if (active_count > 3) {
+            active_count = 3;
+        }
+
+        for (int i = 0; i < active_count; i++) {
+            float x, y, z, pulse;
+
+            if (!scene_get_dynamic_light(scene, i, &x, &y, &z, &pulse)) {
+                continue;
+            }
+
+            {
+                GLfloat position[] = { x, y, z, 1.0f };
+                GLfloat ambient[]  = {
+                    0.03f * master_intensity * pulse,
+                    0.03f * master_intensity * pulse,
+                    0.02f * master_intensity * pulse,
+                    1.0f
+                };
+                GLfloat diffuse[]  = {
+                    0.75f * master_intensity * pulse,
+                    0.65f * master_intensity * pulse,
+                    0.35f * master_intensity * pulse,
+                    1.0f
+                };
+                GLfloat specular[] = {
+                    0.25f * master_intensity * pulse,
+                    0.20f * master_intensity * pulse,
+                    0.10f * master_intensity * pulse,
+                    1.0f
+                };
+
+                glEnable(light_ids[i]);
+                glLightfv(light_ids[i], GL_POSITION, position);
+                glLightfv(light_ids[i], GL_AMBIENT, ambient);
+                glLightfv(light_ids[i], GL_DIFFUSE, diffuse);
+                glLightfv(light_ids[i], GL_SPECULAR, specular);
+
+                glLightf(light_ids[i], GL_CONSTANT_ATTENUATION, 1.0f);
+                glLightf(light_ids[i], GL_LINEAR_ATTENUATION, 0.04f);
+                glLightf(light_ids[i], GL_QUADRATIC_ATTENUATION, 0.01f);
+            }
+        }
+    }
+}
 
 static void draw_grid(void) {
     glDisable(GL_LIGHTING);
@@ -349,9 +407,14 @@ int main(int argc, char* argv[]) {
         glLoadIdentity();
         apply_camera(&camera);
 
-        apply_lighting(light_intensity);
-        GLfloat light_pos[] = { 8.0f, 12.0f, 6.0f, 1.0f };
-        glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+                apply_lighting(light_intensity);
+
+        {
+            GLfloat light_pos[] = { 8.0f, 12.0f, 6.0f, 1.0f };
+            glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+        }
+
+        apply_dynamic_lights(scene, light_intensity);
 
         if (show_grid) {
             draw_grid();

@@ -8,8 +8,6 @@
 #include <SDL2/SDL_opengl.h>
 
 #include "texture.h"
-
-// Course OBJ loader
 #include "model.h"
 #include "load.h"
 #include "draw.h"
@@ -64,6 +62,8 @@ struct Scene {
 
     float gate_open_amount;
     float gate_target_amount;
+
+    float animation_time;
 };
 
 static float deg_to_rad(float deg) { return deg * (float)M_PI / 180.0f; }
@@ -130,10 +130,8 @@ static void compute_object_aabb(SceneObject* o) {
 
     o->box.min_x = o->px - hx;
     o->box.max_x = o->px + hx;
-
     o->box.min_y = o->py - hy;
     o->box.max_y = o->py + hy;
-
     o->box.min_z = o->pz - hz;
     o->box.max_z = o->pz + hz;
 }
@@ -163,6 +161,55 @@ static bool parse_csv_line_v2(
         rx, ry, rz,
         sx, sy, sz
     ) == 13);
+}
+
+static int extract_trailing_number(const char* id) {
+    int len = (int)strlen(id);
+    int start = len;
+
+    while (start > 0 && id[start - 1] >= '0' && id[start - 1] <= '9') {
+        start--;
+    }
+
+    if (start == len) {
+        return -1;
+    }
+
+    return atoi(id + start);
+}
+
+static SceneObject* find_switch_for_lamp(Scene* sc, const SceneObject* lamp) {
+    int lamp_num = extract_trailing_number(lamp->id);
+    if (lamp_num < 0) {
+        return NULL;
+    }
+
+    for (int i = 0; i < sc->obj_count; i++) {
+        SceneObject* obj = &sc->objects[i];
+        if (!str_ieq(obj->type, "switch")) {
+            continue;
+        }
+
+        if (extract_trailing_number(obj->id) == lamp_num) {
+            return obj;
+        }
+    }
+
+    return NULL;
+}
+
+static int is_lamp_active(Scene* sc, const SceneObject* lamp) {
+    SceneObject* linked_switch = find_switch_for_lamp(sc, lamp);
+    if (!linked_switch) {
+        return 0;
+    }
+    return (linked_switch->state == 1);
+}
+
+static float lamp_pulse_value(Scene* sc, const SceneObject* lamp) {
+    int n = extract_trailing_number(lamp->id);
+    float phase = (n > 0) ? (float)n * 1.35f : 0.0f;
+    return 0.55f + 0.45f * (0.5f + 0.5f * sinf(sc->animation_time * 4.0f + phase));
 }
 
 static int count_active_switches(Scene* sc) {
@@ -202,8 +249,6 @@ static void update_gate_positions(Scene* sc) {
         compute_object_aabb(o);
     }
 }
-
-/* -------- Ray vs AABB (slabs) -------- */
 
 static bool ray_aabb_hit(const float ox, const float oy, const float oz,
                          const float dx, const float dy, const float dz,
@@ -249,14 +294,13 @@ static bool ray_aabb_hit(const float ox, const float oy, const float oz,
         if (tmin > tmax) return false;
     }
 
-    float t = (tmin >= 0.0f) ? tmin : tmax;
-    if (t < 0.0f) return false;
-
-    if (out_t) *out_t = t;
-    return true;
+    {
+        float t = (tmin >= 0.0f) ? tmin : tmax;
+        if (t < 0.0f) return false;
+        if (out_t) *out_t = t;
+        return true;
+    }
 }
-
-/* -------- Ground plane draw (tileable) -------- */
 
 static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
     if (!t || !t->loaded || t->tex.id == 0) return;
@@ -267,31 +311,31 @@ static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-    float half_x = 0.5f * o->sx;
-    float half_z = 0.5f * o->sz;
+    {
+        float half_x = 0.5f * o->sx;
+        float half_z = 0.5f * o->sz;
 
-    float x0 = o->px - half_x;
-    float x1 = o->px + half_x;
-    float z0 = o->pz - half_z;
-    float z1 = o->pz + half_z;
-    float y  = o->py;
+        float x0 = o->px - half_x;
+        float x1 = o->px + half_x;
+        float z0 = o->pz - half_z;
+        float z1 = o->pz + half_z;
+        float y  = o->py;
 
-    float tile = 10.0f;
-    float eps  = 0.01f;
-    float off  = 0.37f;
+        float tile = 10.0f;
+        float eps  = 0.01f;
+        float off  = 0.37f;
 
-    glBegin(GL_QUADS);
-    glTexCoord2f(off + eps,        off + eps);        glVertex3f(x0, y, z0);
-    glTexCoord2f(off + tile - eps, off + eps);        glVertex3f(x1, y, z0);
-    glTexCoord2f(off + tile - eps, off + tile - eps); glVertex3f(x1, y, z1);
-    glTexCoord2f(off + eps,        off + tile - eps); glVertex3f(x0, y, z1);
-    glEnd();
+        glBegin(GL_QUADS);
+        glTexCoord2f(off + eps,        off + eps);        glVertex3f(x0, y, z0);
+        glTexCoord2f(off + tile - eps, off + eps);        glVertex3f(x1, y, z0);
+        glTexCoord2f(off + tile - eps, off + tile - eps); glVertex3f(x1, y, z1);
+        glTexCoord2f(off + eps,        off + tile - eps); glVertex3f(x0, y, z1);
+        glEnd();
+    }
 
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glDisable(GL_TEXTURE_2D);
 }
-
-/* -------- Public API -------- */
 
 bool scene_init(Scene** out_scene, const char* csv_path) {
     if (!out_scene) return false;
@@ -310,51 +354,58 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
 
     sc->gate_open_amount = 0.0f;
     sc->gate_target_amount = 0.0f;
+    sc->animation_time = 0.0f;
 
-    char line[1024];
-    int line_no = 0;
+    {
+        char line[1024];
+        int line_no = 0;
 
-    while (fgets(line, sizeof(line), f)) {
-        line_no++;
-        trim_line(line);
-        if (line[0] == '\0') continue;
-        if (line[0] == '#') continue;
+        while (fgets(line, sizeof(line), f)) {
+            line_no++;
+            trim_line(line);
+            if (line[0] == '\0') continue;
+            if (line[0] == '#') continue;
 
-        if (line_no == 1 && strstr(line, "id") && strstr(line, "type") && strstr(line, "model")) {
-            continue;
+            if (line_no == 1 && strstr(line, "id") && strstr(line, "type") && strstr(line, "model")) {
+                continue;
+            }
+
+            {
+                char id[64], type[32], model_path[260], tex_path[260];
+                float px,py,pz,rx,ry,rz,sx,sy,sz;
+
+                if (!parse_csv_line_v2(line, id, type, model_path, tex_path, &px,&py,&pz,&rx,&ry,&rz,&sx,&sy,&sz)) {
+                    printf("scene_init: CSV parse error at line %d: %s\n", line_no, line);
+                    continue;
+                }
+
+                {
+                    int midx = find_or_add_model(sc, model_path);
+                    int tidx = find_or_add_texture(sc, tex_path);
+
+                    SceneObject obj;
+                    memset(&obj, 0, sizeof(obj));
+
+                    strncpy(obj.id, id, sizeof(obj.id)-1);
+                    strncpy(obj.type, type, sizeof(obj.type)-1);
+
+                    obj.model_idx = midx;
+                    obj.tex_idx = tidx;
+
+                    obj.px = px; obj.py = py; obj.pz = pz;
+                    obj.rx = rx; obj.ry = ry; obj.rz = rz;
+                    obj.sx = sx; obj.sy = sy; obj.sz = sz;
+
+                    obj.base_px = px;
+                    obj.base_py = py;
+                    obj.base_pz = pz;
+
+                    obj.state = 0;
+
+                    add_object(sc, obj);
+                }
+            }
         }
-
-        char id[64], type[32], model_path[260], tex_path[260];
-        float px,py,pz,rx,ry,rz,sx,sy,sz;
-
-        if (!parse_csv_line_v2(line, id, type, model_path, tex_path, &px,&py,&pz,&rx,&ry,&rz,&sx,&sy,&sz)) {
-            printf("scene_init: CSV parse error at line %d: %s\n", line_no, line);
-            continue;
-        }
-
-        int midx = find_or_add_model(sc, model_path);
-        int tidx = find_or_add_texture(sc, tex_path);
-
-        SceneObject obj;
-        memset(&obj, 0, sizeof(obj));
-
-        strncpy(obj.id, id, sizeof(obj.id)-1);
-        strncpy(obj.type, type, sizeof(obj.type)-1);
-
-        obj.model_idx = midx;
-        obj.tex_idx = tidx;
-
-        obj.px = px; obj.py = py; obj.pz = pz;
-        obj.rx = rx; obj.ry = ry; obj.rz = rz;
-        obj.sx = sx; obj.sy = sy; obj.sz = sz;
-
-        obj.base_px = px;
-        obj.base_py = py;
-        obj.base_pz = pz;
-
-        obj.state = 0;
-
-        add_object(sc, obj);
     }
 
     fclose(f);
@@ -381,23 +432,28 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
     *out_scene = sc;
     printf("scene_init: objects=%d models=%d textures=%d power_on=%d\n",
            sc->obj_count, sc->model_count, sc->tex_count, sc->power_on);
+
     return true;
 }
 
 void scene_update(Scene* sc, double delta_time) {
     if (!sc) return;
 
-    float speed = 2.4f * (float)delta_time;
+    sc->animation_time += (float)delta_time;
 
-    if (sc->gate_open_amount < sc->gate_target_amount) {
-        sc->gate_open_amount += speed;
-        if (sc->gate_open_amount > sc->gate_target_amount) {
-            sc->gate_open_amount = sc->gate_target_amount;
-        }
-    } else if (sc->gate_open_amount > sc->gate_target_amount) {
-        sc->gate_open_amount -= speed;
+    {
+        float speed = 2.4f * (float)delta_time;
+
         if (sc->gate_open_amount < sc->gate_target_amount) {
-            sc->gate_open_amount = sc->gate_target_amount;
+            sc->gate_open_amount += speed;
+            if (sc->gate_open_amount > sc->gate_target_amount) {
+                sc->gate_open_amount = sc->gate_target_amount;
+            }
+        } else if (sc->gate_open_amount > sc->gate_target_amount) {
+            sc->gate_open_amount -= speed;
+            if (sc->gate_open_amount < sc->gate_target_amount) {
+                sc->gate_open_amount = sc->gate_target_amount;
+            }
         }
     }
 
@@ -419,49 +475,101 @@ bool scene_collides(Scene* sc, const AABB* player_box) {
 int scene_pick(Scene* sc, const Camera* cam) {
     if (!sc || !cam) return -1;
 
-    float ox = cam->x, oy = cam->y, oz = cam->z;
+    {
+        float ox = cam->x, oy = cam->y, oz = cam->z;
+        float yaw = deg_to_rad(cam->yaw);
+        float pitch = deg_to_rad(cam->pitch);
 
-    float yaw = deg_to_rad(cam->yaw);
-    float pitch = deg_to_rad(cam->pitch);
+        float dx = cosf(pitch) * cosf(yaw);
+        float dy = sinf(pitch);
+        float dz = cosf(pitch) * sinf(yaw);
 
-    float dx = cosf(pitch) * cosf(yaw);
-    float dy = sinf(pitch);
-    float dz = cosf(pitch) * sinf(yaw);
+        int best_i = -1;
+        float best_t = 1e30f;
 
-    int best_i = -1;
-    float best_t = 1e30f;
+        for (int i = 0; i < sc->obj_count; i++) {
+            if (!is_interactable_type(sc->objects[i].type)) continue;
 
-    for (int i = 0; i < sc->obj_count; i++) {
-        if (!is_interactable_type(sc->objects[i].type)) continue;
-
-        float t = 0.0f;
-        if (ray_aabb_hit(ox, oy, oz, dx, dy, dz, &sc->objects[i].box, &t)) {
-            if (t < best_t) { best_t = t; best_i = i; }
+            {
+                float t = 0.0f;
+                if (ray_aabb_hit(ox, oy, oz, dx, dy, dz, &sc->objects[i].box, &t)) {
+                    if (t < best_t) {
+                        best_t = t;
+                        best_i = i;
+                    }
+                }
+            }
         }
-    }
 
-    if (best_i != -1 && best_t > 8.0f) return -1;
-    return best_i;
+        if (best_i != -1 && best_t > 8.0f) return -1;
+        return best_i;
+    }
 }
 
 void scene_interact(Scene* sc, int picked_index) {
     if (!sc) return;
     if (picked_index < 0 || picked_index >= sc->obj_count) return;
 
-    SceneObject* o = &sc->objects[picked_index];
+    {
+        SceneObject* o = &sc->objects[picked_index];
 
-    if (str_ieq(o->type, "switch")) {
-        o->state = (o->state == 0) ? 1 : 0;
-        scene_recompute_power(sc);
+        if (str_ieq(o->type, "switch")) {
+            o->state = (o->state == 0) ? 1 : 0;
+            scene_recompute_power(sc);
 
-        printf(
-            "INTERACT: %s toggled -> %d | active_switches=%d | gate_target=%.2f\n",
-            o->id,
-            o->state,
-            count_active_switches(sc),
-            sc->gate_target_amount
-        );
+            printf(
+                "INTERACT: %s toggled -> %d | active_switches=%d | gate_target=%.2f\n",
+                o->id,
+                o->state,
+                count_active_switches(sc),
+                sc->gate_target_amount
+            );
+        }
     }
+}
+
+int scene_get_dynamic_light_count(Scene* sc) {
+    int count = 0;
+
+    if (!sc) return 0;
+
+    for (int i = 0; i < sc->obj_count; i++) {
+        SceneObject* o = &sc->objects[i];
+        if (!str_ieq(o->type, "lamp")) continue;
+        if (is_lamp_active(sc, o)) count++;
+    }
+
+    return count;
+}
+
+bool scene_get_dynamic_light(
+    Scene* sc,
+    int active_index,
+    float* x, float* y, float* z,
+    float* intensity
+) {
+    int current = 0;
+
+    if (!sc) return false;
+
+    for (int i = 0; i < sc->obj_count; i++) {
+        SceneObject* o = &sc->objects[i];
+
+        if (!str_ieq(o->type, "lamp")) continue;
+        if (!is_lamp_active(sc, o)) continue;
+
+        if (current == active_index) {
+            if (x) *x = o->px;
+            if (y) *y = o->py + 0.15f;
+            if (z) *z = o->pz;
+            if (intensity) *intensity = lamp_pulse_value(sc, o);
+            return true;
+        }
+
+        current++;
+    }
+
+    return false;
 }
 
 static void draw_aabb_lines(const AABB* b) {
@@ -510,13 +618,36 @@ void scene_draw(Scene* sc, int picked_index) {
         glRotatef(o->rz, 0.f, 0.f, 1.f);
         glScalef(o->sx, o->sy, o->sz);
 
-        if (str_ieq(o->type, "lamp") && sc->power_on) {
+        if (str_ieq(o->type, "lamp")) {
+            if (is_lamp_active(sc, o)) {
+                float pulse = lamp_pulse_value(sc, o);
+                glDisable(GL_TEXTURE_2D);
+                glDisable(GL_LIGHTING);
+                glColor3f(1.00f * pulse, 0.92f * pulse, 0.55f * pulse);
+                if (m->loaded) draw_model(&m->model);
+                glEnable(GL_LIGHTING);
+            } else {
+                glDisable(GL_TEXTURE_2D);
+                glDisable(GL_LIGHTING);
+                glColor3f(0.15f, 0.15f, 0.18f);
+                if (m->loaded) draw_model(&m->model);
+                glEnable(GL_LIGHTING);
+            }
+        }
+        else if (str_ieq(o->type, "switch")) {
             glDisable(GL_TEXTURE_2D);
             glDisable(GL_LIGHTING);
-            glColor3f(1.0f, 0.95f, 0.60f);
+
+            if (o->state == 1) {
+                glColor3f(0.20f, 1.00f, 0.20f);
+            } else {
+                glColor3f(0.85f, 0.15f, 0.15f);
+            }
+
             if (m->loaded) draw_model(&m->model);
             glEnable(GL_LIGHTING);
-        } else {
+        }
+        else {
             if (t->loaded && t->tex.id != 0) {
                 glEnable(GL_TEXTURE_2D);
                 glBindTexture(GL_TEXTURE_2D, t->tex.id);
@@ -546,8 +677,13 @@ void scene_draw(Scene* sc, int picked_index) {
 void scene_destroy(Scene* sc) {
     if (!sc) return;
 
-    for (int i = 0; i < sc->model_count; i++) free_model(&sc->models[i].model);
-    for (int i = 0; i < sc->tex_count; i++) destroy_texture(&sc->textures[i].tex);
+    for (int i = 0; i < sc->model_count; i++) {
+        free_model(&sc->models[i].model);
+    }
+
+    for (int i = 0; i < sc->tex_count; i++) {
+        destroy_texture(&sc->textures[i].tex);
+    }
 
     free(sc->models);
     free(sc->textures);
