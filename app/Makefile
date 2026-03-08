@@ -1,6 +1,5 @@
 APP_NAME = substation
 
-# Prefer the course C SDK gcc if present
 SDK_GCC = C:/c_sdk_220203/MinGW/bin/gcc.exe
 ifeq ("$(wildcard $(SDK_GCC))","")
 CC = gcc

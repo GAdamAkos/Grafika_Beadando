@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "help.h"
 #include "scene.h"
+#include "collision.h"
 
 static const int INITIAL_WIDTH = 800;
 static const int INITIAL_HEIGHT = 600;
@@ -56,6 +57,27 @@ static void draw_grid(void) {
     glEnd();
 
     glEnable(GL_LIGHTING);
+}
+
+static AABB make_player_aabb(const Camera* cam) {
+    // Simple player volume around camera position
+    const float half_w = 0.25f;
+    const float half_d = 0.25f;
+    const float height = 1.7f;
+
+    // Camera eye height is cam->M, so the "feet" are at y - M
+    float feet_y = cam->y - cam->M;
+
+    AABB a;
+    a.min_x = cam->x - half_w;
+    a.max_x = cam->x + half_w;
+
+    a.min_y = feet_y;
+    a.max_y = feet_y + height;
+
+    a.min_z = cam->z - half_d;
+    a.max_z = cam->z + half_d;
+    return a;
 }
 
 int main(int argc, char* argv[]) {
@@ -119,12 +141,10 @@ int main(int argc, char* argv[]) {
     glEnable(GL_DEPTH_TEST);
     setup_projection(window_w, window_h);
 
-    // Help overlay BMP (museum-style)
     if (!help_init(&help, "../assets/textures/help.bmp")) {
         printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
     }
 
-    // Scene from CSV (repetitive data moved out of code)
     if (!scene_init(&scene, "../assets/scene.csv")) {
         printf("WARNING: scene not loaded (missing ../assets/scene.csv)\n");
     }
@@ -148,7 +168,7 @@ int main(int argc, char* argv[]) {
                     SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
                 }
 
-                // Keep +/- working, even if you "pause" it later
+                // keep +/- (even if you ignore it visually later)
                 if (key == SDLK_PLUS || key == SDLK_KP_PLUS || key == SDLK_EQUALS) {
                     light_intensity += 0.1f;
                     if (light_intensity > 2.0f) light_intensity = 2.0f;
@@ -178,11 +198,27 @@ int main(int argc, char* argv[]) {
         }
 
         Uint32 current_time = SDL_GetTicks();
-        float delta_time = (current_time - last_time) / 1000.0f;
+        double delta_time = (current_time - last_time) / 1000.0;
         last_time = current_time;
 
         if (!show_help) {
+            // Save old position
+            float old_x = camera.x;
+            float old_y = camera.y;
+            float old_z = camera.z;
+
             update_camera(&camera, delta_time);
+
+            // Collision test at new position
+            if (scene) {
+                AABB player = make_player_aabb(&camera);
+                if (scene_collides(scene, &player)) {
+                    // Revert movement
+                    camera.x = old_x;
+                    camera.y = old_y;
+                    camera.z = old_z;
+                }
+            }
         }
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
@@ -197,12 +233,10 @@ int main(int argc, char* argv[]) {
 
         draw_grid();
 
-        // Draw scene objects (from CSV)
         if (scene) {
             scene_draw(scene);
         }
 
-        // Help overlay on top
         if (show_help && help) {
             help_draw(help, window_w, window_h);
         }

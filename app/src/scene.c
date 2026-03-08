@@ -32,6 +32,8 @@ typedef struct SceneObject {
     float px, py, pz;
     float rx, ry, rz;
     float sx, sy, sz;
+
+    AABB box; // collision box
 } SceneObject;
 
 struct Scene {
@@ -88,7 +90,26 @@ static int find_or_add_texture(Scene* sc, const char* path) {
     return sc->tex_count++;
 }
 
+static void compute_object_aabb(SceneObject* o) {
+    // Simple unit-cube bounds scaled and positioned.
+    // Base cube assumed centered at (0,0,0) with size 1 (min=-0.5 max=0.5).
+    float hx = 0.5f * o->sx;
+    float hy = 0.5f * o->sy;
+    float hz = 0.5f * o->sz;
+
+    o->box.min_x = o->px - hx;
+    o->box.max_x = o->px + hx;
+
+    o->box.min_y = o->py - hy;
+    o->box.max_y = o->py + hy;
+
+    o->box.min_z = o->pz - hz;
+    o->box.max_z = o->pz + hz;
+}
+
 static void add_object(Scene* sc, SceneObject obj) {
+    compute_object_aabb(&obj);
+
     if (sc->obj_count == sc->obj_cap) {
         sc->obj_cap = (sc->obj_cap == 0) ? 16 : sc->obj_cap * 2;
         sc->objects = (SceneObject*)realloc(sc->objects, sizeof(SceneObject) * sc->obj_cap);
@@ -100,10 +121,6 @@ static bool parse_csv_line(const char* line, char* model_path, char* tex_path,
                            float* px,float* py,float* pz,
                            float* rx,float* ry,float* rz,
                            float* sx,float* sy,float* sz) {
-    // CSV columns:
-    // model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
-    // Example:
-    // ../assets/models/cube.obj,../assets/textures/cube.bmp,0,0,0,0,0,0,1,1,1
     return (sscanf(line,
         " %259[^,] , %259[^,] , %f , %f , %f , %f , %f , %f , %f , %f , %f ",
         model_path, tex_path,
@@ -137,7 +154,6 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
         if (line[0] == '\0') continue;
         if (line[0] == '#') continue;
 
-        // skip header if present
         if (strstr(line, "model") && strstr(line, "texture") && line_no == 1) {
             continue;
         }
@@ -166,7 +182,6 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
 
     fclose(f);
 
-    // Load unique models/textures once
     for (int i = 0; i < sc->model_count; i++) {
         if (load_model(&sc->models[i].model, sc->models[i].path) != TRUE) {
             printf("scene_init: failed to load model: %s\n", sc->models[i].path);
@@ -207,7 +222,7 @@ void scene_draw(Scene* sc) {
         if (t->loaded && t->tex.id != 0) {
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, t->tex.id);
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); // stable (no tint)
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
         }
 
         if (m->loaded) {
@@ -221,6 +236,17 @@ void scene_draw(Scene* sc) {
 
         glPopMatrix();
     }
+}
+
+bool scene_collides(Scene* sc, const AABB* player_box) {
+    if (!sc || !player_box) return false;
+
+    for (int i = 0; i < sc->obj_count; i++) {
+        if (aabb_intersects(&sc->objects[i].box, player_box)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void scene_destroy(Scene* sc) {
