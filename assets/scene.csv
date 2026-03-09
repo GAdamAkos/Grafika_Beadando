@@ -2,6 +2,9 @@ id,type,model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
 # ----- Ground -----
 ground_1,ground,../assets/models/cube.obj,../assets/textures/ground.bmp,0,-1.0,0,0,0,0,80,1,80
 
+# ----- Ceiling -----
+ceiling_1,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,2.7,0,0,0,0,60,0.25,60
+
 # ----- Switches (objective) -----
 switch_1,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,-10,0,-10,0,0,0,0.7,0.3,0.2
 switch_2,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,12,0,-6,0,0,0,0.7,0.3,0.2
