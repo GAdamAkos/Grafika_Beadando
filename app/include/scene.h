@@ -17,7 +17,7 @@ void scene_update(Scene* scene, double delta_time);
 /**
  * Draw scene, and optionally highlight the picked object (index, -1 = none).
  */
-void scene_draw(Scene* scene, int picked_index);
+void scene_draw(Scene* scene, int picked_index, float master_light);
 
 void scene_destroy(Scene* scene);
 

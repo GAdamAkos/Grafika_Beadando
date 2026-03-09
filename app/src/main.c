@@ -13,37 +13,78 @@ static const int INITIAL_WIDTH = 800;
 static const int INITIAL_HEIGHT = 600;
 
 static void setup_projection(int window_w, int window_h) {
-    if (window_h <= 0) window_h = 1;
+    if (window_h <= 0) {
+        window_h = 1;
+    }
 
     glViewport(0, 0, window_w, window_h);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    float aspect = (float)window_w / (float)window_h;
-    gluPerspective(60.0, aspect, 0.5, 1000.0);
+    {
+        float aspect = (float)window_w / (float)window_h;
+        gluPerspective(60.0, aspect, 0.5, 1000.0);
+    }
 
     glMatrixMode(GL_MODELVIEW);
 }
 
 static void apply_lighting(float intensity) {
-    if (intensity < 0.0f) intensity = 0.0f;
-    if (intensity > 2.0f) intensity = 2.0f;
+    if (intensity < 0.2f) {
+        intensity = 0.2f;
+    }
+    if (intensity > 2.0f) {
+        intensity = 2.0f;
+    }
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
 
-    GLfloat specular[]  = { 0.25f * intensity, 0.25f * intensity, 0.25f * intensity, 1.0f };
-    GLfloat shininess[] = { 24.0f };
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  specular);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 
-    GLfloat ambient[] = { 0.12f * intensity, 0.12f * intensity, 0.12f * intensity, 1.0f };
-    GLfloat diffuse[] = { 0.90f * intensity, 0.90f * intensity, 0.90f * intensity, 1.0f };
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    {
+        GLfloat material_specular[] = {
+            0.30f * intensity,
+            0.30f * intensity,
+            0.30f * intensity,
+            1.0f
+        };
+        GLfloat material_shininess[] = { 24.0f };
+
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, material_shininess);
+    }
+
+    {
+        GLfloat ambient[] = {
+            0.18f * intensity,
+            0.18f * intensity,
+            0.20f * intensity,
+            1.0f
+        };
+
+        GLfloat diffuse[] = {
+            0.85f * intensity,
+            0.85f * intensity,
+            0.80f * intensity,
+            1.0f
+        };
+
+        GLfloat specular[] = {
+            0.30f * intensity,
+            0.30f * intensity,
+            0.30f * intensity,
+            1.0f
+        };
+
+        glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    }
 }
+
 static void apply_dynamic_lights(Scene* scene, float master_intensity) {
     GLenum light_ids[3] = { GL_LIGHT1, GL_LIGHT2, GL_LIGHT3 };
 
@@ -70,22 +111,25 @@ static void apply_dynamic_lights(Scene* scene, float master_intensity) {
 
             {
                 GLfloat position[] = { x, y, z, 1.0f };
-                GLfloat ambient[]  = {
+
+                GLfloat ambient[] = {
+                    0.04f * master_intensity * pulse,
+                    0.04f * master_intensity * pulse,
                     0.03f * master_intensity * pulse,
-                    0.03f * master_intensity * pulse,
-                    0.02f * master_intensity * pulse,
                     1.0f
                 };
-                GLfloat diffuse[]  = {
-                    0.75f * master_intensity * pulse,
-                    0.65f * master_intensity * pulse,
-                    0.35f * master_intensity * pulse,
+
+                GLfloat diffuse[] = {
+                    0.90f * master_intensity * pulse,
+                    0.78f * master_intensity * pulse,
+                    0.42f * master_intensity * pulse,
                     1.0f
                 };
+
                 GLfloat specular[] = {
-                    0.25f * master_intensity * pulse,
-                    0.20f * master_intensity * pulse,
-                    0.10f * master_intensity * pulse,
+                    0.28f * master_intensity * pulse,
+                    0.22f * master_intensity * pulse,
+                    0.12f * master_intensity * pulse,
                     1.0f
                 };
 
@@ -109,8 +153,11 @@ static void draw_grid(void) {
     glBegin(GL_LINES);
     for (int i = -40; i <= 40; i++) {
         glColor3f(0.40f, 0.40f, 0.40f);
-        glVertex3f((float)i, 0.0f, -40.0f); glVertex3f((float)i, 0.0f, 40.0f);
-        glVertex3f(-40.0f, 0.0f, (float)i); glVertex3f(40.0f, 0.0f, (float)i);
+        glVertex3f((float)i, 0.0f, -40.0f);
+        glVertex3f((float)i, 0.0f, 40.0f);
+
+        glVertex3f(-40.0f, 0.0f, (float)i);
+        glVertex3f(40.0f, 0.0f, (float)i);
     }
     glEnd();
 
@@ -133,10 +180,9 @@ static AABB make_player_aabb(const Camera* cam) {
 
     a.min_z = cam->z - half_d;
     a.max_z = cam->z + half_d;
+
     return a;
 }
-
-/* ---------------- 2D overlay helpers (crosshair) ---------------- */
 
 static void begin_2d(int w, int h) {
     glMatrixMode(GL_PROJECTION);
@@ -171,45 +217,48 @@ static void draw_crosshair(int w, int h) {
 
     begin_2d(w, h);
 
-    float cx = w * 0.5f;
-    float cy = h * 0.5f;
+    {
+        float cx = w * 0.5f;
+        float cy = h * 0.5f;
+        float len = 6.0f;
+        float gap = 3.0f;
 
-    float len = 6.0f;
-    float gap = 3.0f;
+        glColor4f(1.f, 1.f, 1.f, 0.75f);
+        glLineWidth(2.0f);
 
-    glColor4f(1.f, 1.f, 1.f, 0.75f);
-    glLineWidth(2.0f);
+        glBegin(GL_LINES);
+        glVertex2f(cx - gap - len, cy);
+        glVertex2f(cx - gap,       cy);
 
-    glBegin(GL_LINES);
-    glVertex2f(cx - gap - len, cy);
-    glVertex2f(cx - gap,       cy);
+        glVertex2f(cx + gap,       cy);
+        glVertex2f(cx + gap + len, cy);
 
-    glVertex2f(cx + gap,       cy);
-    glVertex2f(cx + gap + len, cy);
+        glVertex2f(cx, cy - gap - len);
+        glVertex2f(cx, cy - gap);
 
-    glVertex2f(cx, cy - gap - len);
-    glVertex2f(cx, cy - gap);
+        glVertex2f(cx, cy + gap);
+        glVertex2f(cx, cy + gap + len);
+        glEnd();
 
-    glVertex2f(cx, cy + gap);
-    glVertex2f(cx, cy + gap + len);
-    glEnd();
-
-    glLineWidth(1.0f);
+        glLineWidth(1.0f);
+    }
 
     end_2d();
 
     glPopAttrib();
 }
 
-/* ---------------- Fog ---------------- */
-
 static void setup_fog(float density) {
-    if (density < 0.0f) density = 0.0f;
+    if (density < 0.0f) {
+        density = 0.0f;
+    }
 
     glEnable(GL_FOG);
 
-    GLfloat fogColor[4] = { 0.08f, 0.08f, 0.12f, 1.0f };
-    glFogfv(GL_FOG_COLOR, fogColor);
+    {
+        GLfloat fog_color[4] = { 0.08f, 0.08f, 0.12f, 1.0f };
+        glFogfv(GL_FOG_COLOR, fog_color);
+    }
 
     glFogi(GL_FOG_MODE, GL_EXP2);
     glFogf(GL_FOG_DENSITY, density);
@@ -237,13 +286,9 @@ int main(int argc, char* argv[]) {
     HelpOverlay* help = NULL;
 
     Scene* scene = NULL;
-
     int picked = -1;
 
-    // Fog state
     float fog_density = 0.05f;
-
-    // Debug grid toggle (default OFF for nicer look)
     bool show_grid = false;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -258,8 +303,10 @@ int main(int argc, char* argv[]) {
 
     window = SDL_CreateWindow(
         "Substation Night Patrol",
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        INITIAL_WIDTH, INITIAL_HEIGHT,
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        INITIAL_WIDTH,
+        INITIAL_HEIGHT,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN
     );
 
@@ -285,7 +332,6 @@ int main(int argc, char* argv[]) {
 
     glEnable(GL_DEPTH_TEST);
     setup_projection(window_w, window_h);
-
     setup_fog(fog_density);
 
     if (!help_init(&help, "../assets/textures/help.bmp")) {
@@ -296,141 +342,156 @@ int main(int argc, char* argv[]) {
         printf("WARNING: scene not loaded (missing ../assets/scene.csv)\n");
     }
 
-    Uint32 last_time = SDL_GetTicks();
+    {
+        Uint32 last_time = SDL_GetTicks();
 
-    while (is_running) {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                is_running = false;
-
-            } else if (event.type == SDL_KEYDOWN) {
-                SDL_Keycode key = event.key.keysym.sym;
-
-                if (key == SDLK_ESCAPE) {
+        while (is_running) {
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
                     is_running = false;
                 }
+                else if (event.type == SDL_KEYDOWN) {
+                    SDL_Keycode key = event.key.keysym.sym;
 
-                if (key == SDLK_F1) {
-                    show_help = !show_help;
-                    SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
+                    if (key == SDLK_ESCAPE) {
+                        is_running = false;
+                    }
+
+                    if (key == SDLK_F1) {
+                        show_help = !show_help;
+                        SDL_SetRelativeMouseMode(show_help ? SDL_FALSE : SDL_TRUE);
+                    }
+
+                    if (key == SDLK_g && !show_help) {
+                        show_grid = !show_grid;
+                        printf("Debug grid: %s\n", show_grid ? "ON" : "OFF");
+                    }
+
+                    if (key == SDLK_e && !show_help) {
+                        if (scene) {
+                            scene_interact(scene, picked);
+                        }
+                    }
+
+                    if (key == SDLK_EQUALS || key == SDLK_PLUS || key == SDLK_KP_PLUS) {
+                        light_intensity += 0.1f;
+                        if (light_intensity > 2.0f) {
+                            light_intensity = 2.0f;
+                        }
+                        printf("Light intensity: %.2f\n", light_intensity);
+                    }
+                    else if (key == SDLK_MINUS || key == SDLK_KP_MINUS) {
+                        light_intensity -= 0.1f;
+                        if (light_intensity < 0.2f) {
+                            light_intensity = 0.2f;
+                        }
+                        printf("Light intensity: %.2f\n", light_intensity);
+                    }
+
+                    if (key == SDLK_COMMA) {
+                        fog_density -= 0.002f;
+                        if (fog_density < 0.0f) {
+                            fog_density = 0.0f;
+                        }
+                        setup_fog(fog_density);
+                        printf("Fog density: %.3f\n", fog_density);
+                    }
+                    else if (key == SDLK_PERIOD) {
+                        fog_density += 0.002f;
+                        if (fog_density > 0.15f) {
+                            fog_density = 0.15f;
+                        }
+                        setup_fog(fog_density);
+                        printf("Fog density: %.3f\n", fog_density);
+                    }
+                }
+                else if (event.type == SDL_MOUSEMOTION) {
+                    if (!show_help) {
+                        camera.yaw += event.motion.xrel * camera.sensitivity;
+                        camera.pitch -= event.motion.yrel * camera.sensitivity;
+
+                        if (camera.pitch > 89.0f) {
+                            camera.pitch = 89.0f;
+                        }
+                        if (camera.pitch < -89.0f) {
+                            camera.pitch = -89.0f;
+                        }
+                    }
+                }
+                else if (event.type == SDL_WINDOWEVENT) {
+                    if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
+                        event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                        window_w = event.window.data1;
+                        window_h = event.window.data2;
+                        setup_projection(window_w, window_h);
+                    }
+                }
+            }
+
+            {
+                Uint32 current_time = SDL_GetTicks();
+                double delta_time = (current_time - last_time) / 1000.0;
+                last_time = current_time;
+
+                if (scene) {
+                    scene_update(scene, delta_time);
                 }
 
-                // Debug grid toggle
-                if (key == SDLK_g && !show_help) {
-                    show_grid = !show_grid;
-                    printf("Debug grid: %s\n", show_grid ? "ON" : "OFF");
-                }
+                if (!show_help) {
+                    float old_x = camera.x;
+                    float old_y = camera.y;
+                    float old_z = camera.z;
 
-                // Interact (E)
-                if (key == SDLK_e && !show_help) {
+                    update_camera(&camera, delta_time);
+
                     if (scene) {
-                        scene_interact(scene, picked);
+                        AABB player = make_player_aabb(&camera);
+                        if (scene_collides(scene, &player)) {
+                            camera.x = old_x;
+                            camera.y = old_y;
+                            camera.z = old_z;
+                        }
                     }
                 }
 
-                // Light intensity (optional)
-                if (key == SDLK_PLUS || key == SDLK_KP_PLUS || key == SDLK_EQUALS) {
-                    light_intensity += 0.1f;
-                    if (light_intensity > 2.0f) light_intensity = 2.0f;
-                } else if (key == SDLK_MINUS || key == SDLK_KP_MINUS) {
-                    light_intensity -= 0.1f;
-                    if (light_intensity < 0.0f) light_intensity = 0.0f;
-                }
-
-                // Fog density adjust (comma/period)
-                if (key == SDLK_COMMA) {
-                    fog_density -= 0.002f;
-                    if (fog_density < 0.0f) fog_density = 0.0f;
-                    setup_fog(fog_density);
-                    printf("Fog density: %.3f\n", fog_density);
-                } else if (key == SDLK_PERIOD) {
-                    fog_density += 0.002f;
-                    if (fog_density > 0.15f) fog_density = 0.15f;
-                    setup_fog(fog_density);
-                    printf("Fog density: %.3f\n", fog_density);
-                }
-
-            } else if (event.type == SDL_MOUSEMOTION) {
-                if (!show_help) {
-                    camera.yaw += event.motion.xrel * camera.sensitivity;
-                    camera.pitch -= event.motion.yrel * camera.sensitivity;
-
-                    if (camera.pitch > 89.0f) camera.pitch = 89.0f;
-                    if (camera.pitch < -89.0f) camera.pitch = -89.0f;
-                }
-
-            } else if (event.type == SDL_WINDOWEVENT) {
-                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
-                    event.window.event == SDL_WINDOWEVENT_RESIZED) {
-
-                    window_w = event.window.data1;
-                    window_h = event.window.data2;
-                    setup_projection(window_w, window_h);
+                if (scene && !show_help) {
+                    picked = scene_pick(scene, &camera);
+                } else {
+                    picked = -1;
                 }
             }
-        }
 
-        Uint32 current_time = SDL_GetTicks();
-        double delta_time = (current_time - last_time) / 1000.0;
-        last_time = current_time;
+            glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                if (scene) {
-            scene_update(scene, delta_time);
+            glLoadIdentity();
+            apply_camera(&camera);
+
+            apply_lighting(light_intensity);
+
+            {
+                GLfloat light_pos[] = { 8.0f, 12.0f, 6.0f, 1.0f };
+                glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
             }
 
-        if (!show_help) {
-            float old_x = camera.x;
-            float old_y = camera.y;
-            float old_z = camera.z;
+            apply_dynamic_lights(scene, light_intensity);
 
-            update_camera(&camera, delta_time);
+            if (show_grid) {
+                draw_grid();
+            }
 
             if (scene) {
-                AABB player = make_player_aabb(&camera);
-                if (scene_collides(scene, &player)) {
-                    camera.x = old_x;
-                    camera.y = old_y;
-                    camera.z = old_z;
-                }
+                scene_draw(scene, picked, light_intensity);
             }
+
+            if (show_help && help) {
+                help_draw(help, window_w, window_h);
+            } else {
+                draw_crosshair(window_w, window_h);
+            }
+
+            SDL_GL_SwapWindow(window);
         }
-
-        if (scene && !show_help) {
-            picked = scene_pick(scene, &camera);
-        } else {
-            picked = -1;
-        }
-
-        glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glLoadIdentity();
-        apply_camera(&camera);
-
-                apply_lighting(light_intensity);
-
-        {
-            GLfloat light_pos[] = { 8.0f, 12.0f, 6.0f, 1.0f };
-            glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
-        }
-
-        apply_dynamic_lights(scene, light_intensity);
-
-        if (show_grid) {
-            draw_grid();
-        }
-
-        if (scene) {
-            scene_draw(scene, picked);
-        }
-
-        if (show_help && help) {
-            help_draw(help, window_w, window_h);
-        } else {
-            draw_crosshair(window_w, window_h);
-        }
-
-        SDL_GL_SwapWindow(window);
     }
 
     scene_destroy(scene);
@@ -439,5 +500,6 @@ int main(int argc, char* argv[]) {
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
     return 0;
 }
