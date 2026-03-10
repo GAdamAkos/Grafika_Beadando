@@ -165,8 +165,8 @@ static void draw_grid(void) {
 }
 
 static AABB make_player_aabb(const Camera* cam) {
-    const float half_w = 0.25f;
-    const float half_d = 0.25f;
+    const float half_w = 0.75f;
+    const float half_d = 0.75f;
     const float height = 1.7f;
 
     float feet_y = cam->y - cam->M;
