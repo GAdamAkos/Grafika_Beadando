@@ -28,18 +28,18 @@ block_2,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,-5,0,5,0,
 # ======================================================
 
 # ----- Gate on north wall -----
-gate_left,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,-2,1.6,-18,0,0,0,4.2,5.2,0.25
-gate_right,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,2,1.6,-18,0,0,0,4.2,5.2,0.25
+gate_left,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,-4.0,1.6,-18,0,0,0,4.0,5.2,0.25
+gate_right,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,4.0,1.6,-18,0,0,0,4.0,5.2,0.25
 
 # ----- North wall (left side of gate) -----
-wall_n_l_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16.2,1.6,-18,0,0,0,4.2,5.2,0.25
-wall_n_l_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-12.1,1.6,-18,0,0,0,4.2,5.2,0.25
-wall_n_l_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-8.0,1.6,-18,0,0,0,4.2,5.2,0.25
+wall_n_l_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-15.6,1.6,-18,0,0,0,4.8,5.2,0.25
+wall_n_l_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-11.0,1.6,-18,0,0,0,4.8,5.2,0.25
+wall_n_l_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-6.4,1.6,-18,0,0,0,4.8,5.2,0.25
 
 # ----- North wall (right side of gate) -----
-wall_n_r_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,8.0,1.6,-18,0,0,0,4.2,5.2,0.25
-wall_n_r_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.1,1.6,-18,0,0,0,4.2,5.2,0.25
-wall_n_r_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,16.2,1.6,-18,0,0,0,4.2,5.2,0.25
+wall_n_r_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,6.4,1.6,-18,0,0,0,4.8,5.2,0.25
+wall_n_r_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,11.0,1.6,-18,0,0,0,4.8,5.2,0.25
+wall_n_r_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,15.6,1.6,-18,0,0,0,4.8,5.2,0.25
 
 # ----- South wall -----
 wall_s_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16.4,1.6,18,0,0,0,4.2,5.2,0.25

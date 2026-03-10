@@ -60,8 +60,8 @@ struct Scene {
 
     int power_on;
 
-    float gate_open_amount;
-    float gate_target_amount;
+    float gate_open_angle;
+    float gate_target_angle;
 
     float animation_time;
 };
@@ -144,10 +144,78 @@ static int find_or_add_texture(Scene* sc, const char* path) {
     return sc->tex_count++;
 }
 
+static int is_gate_object(const SceneObject* o) {
+    return (o != NULL && str_ieq(o->type, "gate"));
+}
+
+static int gate_hinge_sign(const SceneObject* o) {
+    if (o == NULL) {
+        return 0;
+    }
+
+    if (strcmp(o->id, "gate_left") == 0) {
+        return 1;
+    }
+
+    if (strcmp(o->id, "gate_right") == 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static void compute_gate_aabb(SceneObject* o) {
+    float half_w;
+    float half_h;
+    float half_d;
+    float angle;
+    float c;
+    float s;
+    float dir;
+    float center_x;
+    float center_z;
+    float hx;
+    float hz;
+
+    if (o == NULL) {
+        return;
+    }
+
+    half_w = 0.5f * o->sx;
+    half_h = 0.5f * o->sy;
+    half_d = 0.5f * o->sz;
+    angle = deg_to_rad(o->ry);
+    c = cosf(angle);
+    s = sinf(angle);
+    dir = (float)gate_hinge_sign(o);
+
+    center_x = o->px + dir * half_w * c;
+    center_z = o->pz - dir * half_w * s;
+
+    hx = fabsf(c) * half_w + fabsf(s) * half_d;
+    hz = fabsf(s) * half_w + fabsf(c) * half_d;
+
+    o->box.min_x = center_x - hx;
+    o->box.max_x = center_x + hx;
+    o->box.min_y = o->py - half_h;
+    o->box.max_y = o->py + half_h;
+    o->box.min_z = center_z - hz;
+    o->box.max_z = center_z + hz;
+}
+
 static void compute_object_aabb(SceneObject* o) {
-    float hx = 0.5f * o->sx;
-    float hy = 0.5f * o->sy;
-    float hz = 0.5f * o->sz;
+    float hx;
+    float hy;
+    float hz;
+
+    if (is_gate_object(o)) {
+        compute_gate_aabb(o);
+        return;
+    }
+
+    hx = 0.5f * o->sx;
+    hy = 0.5f * o->sy;
+    hz = 0.5f * o->sz;
 
     o->box.min_x = o->px - hx;
     o->box.max_x = o->px + hx;
@@ -252,26 +320,29 @@ static int count_active_switches(Scene* sc) {
 static void scene_recompute_power(Scene* sc) {
     int active_switches = count_active_switches(sc);
     sc->power_on = (active_switches > 0) ? 1 : 0;
-    sc->gate_target_amount = (active_switches >= 3) ? 2.2f : 0.0f;
+    sc->gate_target_angle = (active_switches >= 3) ? 90.0f : 0.0f;
 }
 
-static void update_gate_positions(Scene* sc) {
+static void update_gate_transforms(Scene* sc) {
     for (int i = 0; i < sc->obj_count; i++) {
         SceneObject* o = &sc->objects[i];
 
-        if (!str_ieq(o->type, "gate")) {
+        if (!is_gate_object(o)) {
             continue;
         }
 
         o->px = o->base_px;
         o->py = o->base_py;
         o->pz = o->base_pz;
+        o->rx = 0.0f;
+        o->rz = 0.0f;
+        o->ry = 0.0f;
 
         if (strcmp(o->id, "gate_left") == 0) {
-            o->px = o->base_px - sc->gate_open_amount;
+            o->ry = -sc->gate_open_angle;
         }
         else if (strcmp(o->id, "gate_right") == 0) {
-            o->px = o->base_px + sc->gate_open_amount;
+            o->ry = sc->gate_open_angle;
         }
 
         compute_object_aabb(o);
@@ -430,8 +501,8 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
         return false;
     }
 
-    sc->gate_open_amount = 0.0f;
-    sc->gate_target_amount = 0.0f;
+    sc->gate_open_angle = 0.0f;
+    sc->gate_target_angle = 0.0f;
     sc->animation_time = 0.0f;
 
     {
@@ -514,7 +585,7 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
     }
 
     scene_recompute_power(sc);
-    update_gate_positions(sc);
+    update_gate_transforms(sc);
 
     *out_scene = sc;
 
@@ -534,23 +605,23 @@ void scene_update(Scene* sc, double delta_time) {
     sc->animation_time += (float)delta_time;
 
     {
-        float speed = 2.4f * (float)delta_time;
+    float speed = 180.0f * (float)delta_time;
 
-        if (sc->gate_open_amount < sc->gate_target_amount) {
-            sc->gate_open_amount += speed;
-            if (sc->gate_open_amount > sc->gate_target_amount) {
-                sc->gate_open_amount = sc->gate_target_amount;
-            }
-        }
-        else if (sc->gate_open_amount > sc->gate_target_amount) {
-            sc->gate_open_amount -= speed;
-            if (sc->gate_open_amount < sc->gate_target_amount) {
-                sc->gate_open_amount = sc->gate_target_amount;
-            }
+    if (sc->gate_open_angle < sc->gate_target_angle) {
+        sc->gate_open_angle += speed;
+        if (sc->gate_open_angle > sc->gate_target_angle) {
+            sc->gate_open_angle = sc->gate_target_angle;
         }
     }
+    else if (sc->gate_open_angle > sc->gate_target_angle) {
+        sc->gate_open_angle -= speed;
+        if (sc->gate_open_angle < sc->gate_target_angle) {
+            sc->gate_open_angle = sc->gate_target_angle;
+        }
+    }
+}
 
-    update_gate_positions(sc);
+update_gate_transforms(sc);
 }
 
 bool scene_collides(Scene* sc, const AABB* player_box) {
@@ -626,12 +697,12 @@ void scene_interact(Scene* sc, int picked_index) {
             scene_recompute_power(sc);
 
             printf(
-                "INTERACT: %s toggled -> %d | active_switches=%d | gate_target=%.2f\n",
-                o->id,
-                o->state,
-                count_active_switches(sc),
-                sc->gate_target_amount
-            );
+            "INTERACT: %s toggled -> %d | active_switches=%d | gate_target_angle=%.2f\n",
+            o->id,
+            o->state,
+            count_active_switches(sc),
+            sc->gate_target_angle
+        );
         }
     }
 }
@@ -728,10 +799,19 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
         glPushMatrix();
 
         glTranslatef(o->px, o->py, o->pz);
-        glRotatef(o->rx, 1.f, 0.f, 0.f);
-        glRotatef(o->ry, 0.f, 1.f, 0.f);
-        glRotatef(o->rz, 0.f, 0.f, 1.f);
-        glScalef(o->sx, o->sy, o->sz);
+            
+        if (is_gate_object(o)) {
+            float hinge_offset = 0.5f * o->sx * (float)gate_hinge_sign(o);
+            glRotatef(o->ry, 0.f, 1.f, 0.f);
+            glTranslatef(hinge_offset, 0.f, 0.f);
+            glScalef(o->sx, o->sy, o->sz);
+        }
+        else {
+            glRotatef(o->rx, 1.f, 0.f, 0.f);
+            glRotatef(o->ry, 0.f, 1.f, 0.f);
+            glRotatef(o->rz, 0.f, 0.f, 1.f);
+            glScalef(o->sx, o->sy, o->sz);
+}
 
         if (str_ieq(o->type, "lamp")) {
             if (is_lamp_active(sc, o)) {
