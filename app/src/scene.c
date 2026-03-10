@@ -304,6 +304,52 @@ static float lamp_pulse_value(Scene* sc, const SceneObject* lamp) {
     float phase = (n > 0) ? (float)n * 1.35f : 0.0f;
     return 0.55f + 0.45f * (0.5f + 0.5f * sinf(sc->animation_time * 4.0f + phase));
 }
+static float broken_switch_pulse(Scene* sc, const SceneObject* sw) {
+    int n = extract_trailing_number(sw->id);
+    float phase = (n > 0) ? (float)n * 0.9f : 0.0f;
+    return 0.5f + 0.5f * sinf(sc->animation_time * 11.0f + phase);
+}
+
+static void draw_switch_status_light(int repaired, float pulse) {
+    float z = 0.515f;
+
+    glBegin(GL_QUADS);
+
+    if (repaired) {
+        glColor3f(0.20f, 1.00f, 0.25f);
+    } else {
+        glColor3f(0.95f, 0.15f + 0.35f * pulse, 0.05f);
+    }
+
+    glVertex3f(-0.10f, 0.18f, z);
+    glVertex3f( 0.10f, 0.18f, z);
+    glVertex3f( 0.10f, 0.34f, z);
+    glVertex3f(-0.10f, 0.34f, z);
+
+    glEnd();
+}
+
+static void draw_switch_sparks(Scene* sc, const SceneObject* sw) {
+    float pulse = broken_switch_pulse(sc, sw);
+
+    if (pulse < 0.78f) {
+        return;
+    }
+
+    glLineWidth(2.0f);
+    glColor3f(1.00f, 0.85f + 0.15f * pulse, 0.15f);
+
+    glBegin(GL_LINES);
+
+    glVertex3f( 0.03f, -0.02f, 0.52f); glVertex3f( 0.18f,  0.12f, 0.78f);
+    glVertex3f(-0.02f, -0.05f, 0.52f); glVertex3f(-0.16f,  0.08f, 0.75f);
+    glVertex3f( 0.00f,  0.02f, 0.52f); glVertex3f( 0.06f, -0.14f, 0.76f);
+    glVertex3f( 0.08f,  0.03f, 0.52f); glVertex3f( 0.22f, -0.04f, 0.77f);
+    glVertex3f(-0.06f,  0.04f, 0.52f); glVertex3f(-0.20f,  0.16f, 0.76f);
+
+    glEnd();
+    glLineWidth(1.0f);
+}
 
 static int count_active_switches(Scene* sc) {
     int count = 0;
@@ -693,16 +739,20 @@ void scene_interact(Scene* sc, int picked_index) {
         SceneObject* o = &sc->objects[picked_index];
 
         if (str_ieq(o->type, "switch")) {
-            o->state = (o->state == 0) ? 1 : 0;
-            scene_recompute_power(sc);
+            if (o->state == 0) {
+                o->state = 1;
+                scene_recompute_power(sc);
 
-            printf(
-            "INTERACT: %s toggled -> %d | active_switches=%d | gate_target_angle=%.2f\n",
-            o->id,
-            o->state,
-            count_active_switches(sc),
-            sc->gate_target_angle
-        );
+                printf(
+                    "REPAIR: %s fixed -> %d | fixed_switches=%d | gate_target_angle=%.2f\n",
+                    o->id,
+                    o->state,
+                    count_active_switches(sc),
+                    sc->gate_target_angle
+                );
+            } else {
+                printf("REPAIR: %s is already fixed\n", o->id);
+            }
         }
     }
 }
@@ -799,7 +849,7 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
         glPushMatrix();
 
         glTranslatef(o->px, o->py, o->pz);
-            
+
         if (is_gate_object(o)) {
             float hinge_offset = 0.5f * o->sx * (float)gate_hinge_sign(o);
             glRotatef(o->ry, 0.f, 1.f, 0.f);
@@ -839,21 +889,34 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
             }
         }
         else if (str_ieq(o->type, "switch")) {
-            glDisable(GL_TEXTURE_2D);
-            glDisable(GL_LIGHTING);
+    float pulse = broken_switch_pulse(sc, o);
 
-            if (o->state == 1) {
-                glColor3f(0.20f, 1.00f, 0.20f);
-            } else {
-                glColor3f(0.85f, 0.15f, 0.15f);
-            }
+    glColor3f(1.0f, 1.0f, 1.0f);
 
-            if (m->loaded) {
-                draw_model(&m->model);
-            }
+    if (t->loaded && t->tex.id != 0) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, t->tex.id);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    }
 
-            glEnable(GL_LIGHTING);
-        }
+    if (m->loaded) {
+        draw_model(&m->model);
+    }
+
+    if (t->loaded && t->tex.id != 0) {
+        glDisable(GL_TEXTURE_2D);
+    }
+
+    glDisable(GL_LIGHTING);
+
+    draw_switch_status_light(o->state == 1, pulse);
+
+    if (o->state == 0) {
+        draw_switch_sparks(sc, o);
+    }
+
+    glEnable(GL_LIGHTING);
+}
         else if (is_fence_like_object(o, t)) {
             float fence_brightness = compute_fence_brightness(master_light);
 
