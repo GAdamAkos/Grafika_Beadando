@@ -1,99 +1,75 @@
 id,type,model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
 # ----- Ground -----
-ground_1,ground,../assets/models/cube.obj,../assets/textures/ground.bmp,0,-1.0,0,0,0,0,80,1,80
+ground_1,ground,../assets/models/cube.obj,../assets/textures/ground.bmp,0,-1.0,0,0,0,0,48,1,48
 
 # ----- Ceiling -----
-ceiling_1,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,2.7,0,0,0,0,60,0.25,60
+ceiling_1,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,4.3,0,0,0,0,36.6,0.25,36.6
 
 # ----- Switches (objective) -----
-switch_1,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,-10,0,-10,0,0,0,0.7,0.3,0.2
-switch_2,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,12,0,-6,0,0,0,0.7,0.3,0.2
-switch_3,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,0,0,14,0,0,0,0.7,0.3,0.2
+switch_1,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,-7,0,-7,0,0,0,0.7,0.3,0.2
+switch_2,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,9,0,-4,0,0,0,0.7,0.3,0.2
+switch_3,switch,../assets/models/cube.obj,../assets/textures/cube.bmp,0,0,11,0,0,0,0.7,0.3,0.2
 
-# ----- Lamp near each switch (optional feedback) -----
-lamp_1,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,-10,1.6,-10,0,0,0,0.25,0.25,0.25
-lamp_2,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,12,1.6,-6,0,0,0,0.25,0.25,0.25
-lamp_3,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,0,1.6,14,0,0,0,0.25,0.25,0.25
+# ----- Lamp near each switch -----
+lamp_1,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,-7,2.8,-7,0,0,0,0.25,0.25,0.25
+lamp_2,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,9,2.8,-4,0,0,0,0.25,0.25,0.25
+lamp_3,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,0,2.8,11,0,0,0,0.25,0.25,0.25
 
 # ----- Props -----
-block_1,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,6,0,6,0,0,0,1,1,1
-block_2,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,-6,0,6,0,0,0,1,1,1
+block_1,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,5,0,5,0,0,0,1,1,1
+block_2,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,-5,0,5,0,0,0,1,1,1
 
-# ----- Gate (two panels) on the north wall (z = -30), starts closed -----
-gate_left,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,-2,0.8,-30,0,0,0,4,3.6,0.25
-gate_right,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,2,0.8,-30,0,0,0,4,3.6,0.25
+# ======================================================
+# ROOM
+# Half-size ~ 18
+# Ground top = -0.5  (ground center -1.0, sy=1)
+# Wall height = 5.2, so wall center Y = 1.6 makes bottom exactly -1.0
+# Panels intentionally overlap slightly to avoid visible seams/gaps
+# ======================================================
 
-# =========================
-# Fence: rectangle perimeter (taller + sits on ground)
-# Ground Y = -1.0
-# Fence height sy = 3.6 -> center py = 0.8
-# NOTE: We leave a gap where the gate panels sit (center area), but the gate panels themselves block.
-# =========================
+# ----- Gate on north wall -----
+gate_left,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,-2,1.6,-18,0,0,0,4.2,5.2,0.25
+gate_right,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,2,1.6,-18,0,0,0,4.2,5.2,0.25
 
-# ---- North side (z = -30) ----
-fence_n_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-28,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-24,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-20,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-12,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-8,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-4,0.8,-30,0,0,0,4,3.6,0.25
-# gap at x ~ 0 is handled by gate_left/gate_right
-fence_n_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,4,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_10,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,8,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_11,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_12,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,16,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_13,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,20,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_14,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,24,0.8,-30,0,0,0,4,3.6,0.25
-fence_n_15,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,28,0.8,-30,0,0,0,4,3.6,0.25
+# ----- North wall (left side of gate) -----
+wall_n_l_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16.2,1.6,-18,0,0,0,4.2,5.2,0.25
+wall_n_l_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-12.1,1.6,-18,0,0,0,4.2,5.2,0.25
+wall_n_l_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-8.0,1.6,-18,0,0,0,4.2,5.2,0.25
 
-# ---- South side (z = +30) ----
-fence_s_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-28,0.8,30,0,0,0,4,3.6,0.25
-fence_s_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-24,0.8,30,0,0,0,4,3.6,0.25
-fence_s_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-20,0.8,30,0,0,0,4,3.6,0.25
-fence_s_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16,0.8,30,0,0,0,4,3.6,0.25
-fence_s_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-12,0.8,30,0,0,0,4,3.6,0.25
-fence_s_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-8,0.8,30,0,0,0,4,3.6,0.25
-fence_s_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-4,0.8,30,0,0,0,4,3.6,0.25
-fence_s_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,0,0.8,30,0,0,0,4,3.6,0.25
-fence_s_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,4,0.8,30,0,0,0,4,3.6,0.25
-fence_s_10,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,8,0.8,30,0,0,0,4,3.6,0.25
-fence_s_11,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12,0.8,30,0,0,0,4,3.6,0.25
-fence_s_12,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,16,0.8,30,0,0,0,4,3.6,0.25
-fence_s_13,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,20,0.8,30,0,0,0,4,3.6,0.25
-fence_s_14,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,24,0.8,30,0,0,0,4,3.6,0.25
-fence_s_15,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,28,0.8,30,0,0,0,4,3.6,0.25
+# ----- North wall (right side of gate) -----
+wall_n_r_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,8.0,1.6,-18,0,0,0,4.2,5.2,0.25
+wall_n_r_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.1,1.6,-18,0,0,0,4.2,5.2,0.25
+wall_n_r_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,16.2,1.6,-18,0,0,0,4.2,5.2,0.25
 
-# ---- West side (x = -30) ----
-fence_w_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,-28,0,0,0,0.25,3.6,4
-fence_w_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,-24,0,0,0,0.25,3.6,4
-fence_w_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,-20,0,0,0,0.25,3.6,4
-fence_w_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,-16,0,0,0,0.25,3.6,4
-fence_w_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,-12,0,0,0,0.25,3.6,4
-fence_w_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,-8,0,0,0,0.25,3.6,4
-fence_w_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,-4,0,0,0,0.25,3.6,4
-fence_w_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,0,0,0,0,0.25,3.6,4
-fence_w_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,4,0,0,0,0.25,3.6,4
-fence_w_10,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,8,0,0,0,0.25,3.6,4
-fence_w_11,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,12,0,0,0,0.25,3.6,4
-fence_w_12,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,16,0,0,0,0.25,3.6,4
-fence_w_13,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,20,0,0,0,0.25,3.6,4
-fence_w_14,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,24,0,0,0,0.25,3.6,4
-fence_w_15,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-30,0.8,28,0,0,0,0.25,3.6,4
+# ----- South wall -----
+wall_s_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16.4,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-12.3,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-8.2,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-4.1,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,0.0,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,4.1,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,8.2,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.3,1.6,18,0,0,0,4.2,5.2,0.25
+wall_s_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,16.4,1.6,18,0,0,0,4.2,5.2,0.25
 
-# ---- East side (x = +30) ----
-fence_e_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,-28,0,0,0,0.25,3.6,4
-fence_e_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,-24,0,0,0,0.25,3.6,4
-fence_e_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,-20,0,0,0,0.25,3.6,4
-fence_e_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,-16,0,0,0,0.25,3.6,4
-fence_e_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,-12,0,0,0,0.25,3.6,4
-fence_e_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,-8,0,0,0,0.25,3.6,4
-fence_e_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,-4,0,0,0,0.25,3.6,4
-fence_e_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,0,0,0,0,0.25,3.6,4
-fence_e_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,4,0,0,0,0.25,3.6,4
-fence_e_10,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,8,0,0,0,0.25,3.6,4
-fence_e_11,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,12,0,0,0,0.25,3.6,4
-fence_e_12,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,16,0,0,0,0.25,3.6,4
-fence_e_13,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,20,0,0,0,0.25,3.6,4
-fence_e_14,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,24,0,0,0,0.25,3.6,4
-fence_e_15,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,30,0.8,28,0,0,0,0.25,3.6,4
+# ----- West wall -----
+wall_w_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-16.4,0,0,0,0.25,5.2,4.2
+wall_w_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-12.3,0,0,0,0.25,5.2,4.2
+wall_w_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-8.2,0,0,0,0.25,5.2,4.2
+wall_w_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-4.1,0,0,0,0.25,5.2,4.2
+wall_w_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,0.0,0,0,0,0.25,5.2,4.2
+wall_w_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,4.1,0,0,0,0.25,5.2,4.2
+wall_w_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,8.2,0,0,0,0.25,5.2,4.2
+wall_w_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,12.3,0,0,0,0.25,5.2,4.2
+wall_w_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,16.4,0,0,0,0.25,5.2,4.2
+
+# ----- East wall -----
+wall_e_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-16.4,0,0,0,0.25,5.2,4.2
+wall_e_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-12.3,0,0,0,0.25,5.2,4.2
+wall_e_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-8.2,0,0,0,0.25,5.2,4.2
+wall_e_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-4.1,0,0,0,0.25,5.2,4.2
+wall_e_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,0.0,0,0,0,0.25,5.2,4.2
+wall_e_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,4.1,0,0,0,0.25,5.2,4.2
+wall_e_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,8.2,0,0,0,0.25,5.2,4.2
+wall_e_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,12.3,0,0,0,0.25,5.2,4.2
+wall_e_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,16.4,0,0,0,0.25,5.2,4.2
