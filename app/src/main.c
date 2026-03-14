@@ -186,6 +186,17 @@ static AABB make_player_aabb(const Camera* cam) {
     return a;
 }
 
+static bool is_near_victory_terminal(const Camera* cam) {
+    if (!cam) {
+        return false;
+    }
+
+    return (
+        cam->x > -2.2f && cam->x < 2.2f &&
+        cam->z < -29.5f && cam->z > -32.8f
+    );
+}
+
 static void begin_2d(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -250,6 +261,55 @@ static void draw_crosshair(int w, int h) {
     glPopAttrib();
 }
 
+static void draw_victory_overlay(int w, int h) {
+    float box_w = 520.0f;
+    float box_h = 120.0f;
+    float x0 = (w - box_w) * 0.5f;
+    float y0 = h * 0.18f;
+    float x1 = x0 + box_w;
+    float y1 = y0 + box_h;
+
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    begin_2d(w, h);
+
+    glColor4f(0.02f, 0.05f, 0.06f, 0.68f);
+    glBegin(GL_QUADS);
+    glVertex2f(x0, y0);
+    glVertex2f(x1, y0);
+    glVertex2f(x1, y1);
+    glVertex2f(x0, y1);
+    glEnd();
+
+    glColor4f(0.30f, 0.85f, 0.55f, 0.85f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x0, y0);
+    glVertex2f(x1, y0);
+    glVertex2f(x1, y1);
+    glVertex2f(x0, y1);
+    glEnd();
+
+    glColor4f(0.30f, 0.85f, 0.55f, 0.20f);
+    glBegin(GL_QUADS);
+    glVertex2f(x0 + 16.0f, y0 + 18.0f);
+    glVertex2f(x1 - 16.0f, y0 + 18.0f);
+    glVertex2f(x1 - 16.0f, y0 + 34.0f);
+    glVertex2f(x0 + 16.0f, y0 + 34.0f);
+    glEnd();
+
+    end_2d();
+
+    glPopAttrib();
+}
+
 static void setup_fog(float density) {
     if (density < 0.0f) {
         density = 0.0f;
@@ -286,9 +346,12 @@ int main(int argc, char* argv[]) {
 
     bool show_help = false;
     HelpOverlay* help = NULL;
+    HelpOverlay* mission_overlay = NULL;
 
     Scene* scene = NULL;
     int picked = -1;
+    bool mission_complete = false;
+    bool victory_ready = false;
 
     float fog_density = 0.05f;
     bool show_grid = false;
@@ -338,7 +401,11 @@ int main(int argc, char* argv[]) {
     setup_fog(fog_density);
 
     if (!help_init(&help, "../assets/textures/help.bmp")) {
-        printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
+    printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
+    }
+
+    if (!help_init(&mission_overlay, "../assets/textures/mission_complete.bmp")) {
+        printf("WARNING: mission overlay not loaded (missing ../assets/textures/mission_complete.bmp)\n");
     }
 
     if (!scene_init(&scene, "../assets/scene.csv")) {
@@ -373,6 +440,12 @@ int main(int argc, char* argv[]) {
                     if (key == SDLK_e && !show_help) {
                         if (scene) {
                             scene_interact(scene, picked);
+                        }
+
+                        if (victory_ready && !mission_complete && is_near_victory_terminal(&camera)) {
+                            mission_complete = true;
+                            SDL_SetWindowTitle(window, "Substation Night Patrol - MISSION COMPLETE");
+                            printf("MISSION COMPLETE: Terminal activated. Substation restored.\n");
                         }
                     }
 
@@ -462,6 +535,10 @@ int main(int argc, char* argv[]) {
                 } else {
                     picked = -1;
                 }
+
+                if (!mission_complete && scene && scene_get_dynamic_light_count(scene) >= 3) {
+                    victory_ready = true;
+                }
             }
 
             glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
@@ -491,6 +568,10 @@ int main(int argc, char* argv[]) {
                 help_draw(help, window_w, window_h);
             } else {
                 draw_crosshair(window_w, window_h);
+
+                if (mission_complete && mission_overlay) {
+                    help_draw(mission_overlay, window_w, window_h);
+                }
             }
 
             SDL_GL_SwapWindow(window);
@@ -499,6 +580,7 @@ int main(int argc, char* argv[]) {
 
     scene_destroy(scene);
     help_destroy(help);
+    help_destroy(mission_overlay);
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);

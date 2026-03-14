@@ -1,6 +1,6 @@
 id,type,model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
 # ----- Ground -----
-ground_1,ground,../assets/models/cube.obj,../assets/textures/ground.bmp,0,-1.0,0,0,0,0,48,1,48
+ground_1,ground,../assets/models/cube.obj,../assets/textures/ground.bmp,0,-1.0,-10,0,0,0,48,1,68
 
 # ----- Ceiling -----
 ceiling_1,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,4.3,0,0,0,0,36.6,0.25,36.6
@@ -28,8 +28,8 @@ block_2,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,-5,0,5,0,
 # ======================================================
 
 # ----- Gate on north wall -----
-gate_left,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,-4.0,1.6,-18,0,0,0,4.0,5.2,0.25
-gate_right,gate,../assets/models/cube.obj,../assets/textures/fence.bmp,4.0,1.6,-18,0,0,0,4.0,5.2,0.25
+gate_left,gate,../assets/models/cube.obj,../assets/textures/gate_texture.bmp,-4.0,1.6,-18,0,0,0,4.0,5.2,0.25
+gate_right,gate,../assets/models/cube.obj,../assets/textures/gate_texture.bmp,4.0,1.6,-18,0,0,0,4.0,5.2,0.25
 
 # ----- North wall (left side of gate) -----
 wall_n_l_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16.25,1.6,-18,0,0,0,3.5,5.2,0.25
@@ -75,3 +75,40 @@ wall_e_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,
 wall_e_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,8.0,0,0,0,0.25,5.2,4.0
 wall_e_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,12.0,0,0,0,0.25,5.2,4.0
 wall_e_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,16.0,0,0,0,0.25,5.2,4.0
+
+# ======================================================
+# Victory room behind the main gate
+# Exact continuation of the main room, without overlapping floor
+# ======================================================
+
+# -----  ceiling behind the gate -----
+ceiling_2,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,4.3,-28,0,0,0,36.6,0.25,20.6
+
+# ----- Victory room west wall (segmented, no stretched texture) -----
+victory_w_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-36.0,0,0,0,0.25,5.2,4.0
+victory_w_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-32.0,0,0,0,0.25,5.2,4.0
+victory_w_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-28.0,0,0,0,0.25,5.2,4.0
+victory_w_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-24.0,0,0,0,0.25,5.2,4.0
+victory_w_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-18,1.6,-20.0,0,0,0,0.25,5.2,4.0
+
+# ----- Victory room east wall (segmented, no stretched texture) -----
+victory_e_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-36.0,0,0,0,0.25,5.2,4.0
+victory_e_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-32.0,0,0,0,0.25,5.2,4.0
+victory_e_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-28.0,0,0,0,0.25,5.2,4.0
+victory_e_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-24.0,0,0,0,0.25,5.2,4.0
+victory_e_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,18,1.6,-20.0,0,0,0,0.25,5.2,4.0
+
+# ----- Victory room back wall -----
+victory_n_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-16.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_2,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-12.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_3,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-8.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-4.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,0.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,4.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_7,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,8.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_8,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.0,1.6,-38,0,0,0,4.0,5.2,0.25
+victory_n_9,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,16.0,1.6,-38,0,0,0,4.0,5.2,0.25
+
+# ----- Central terminal / objective block -----
+victory_console,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,0,0.2,-31,0,0,0,2.0,2.4,1.2
+victory_core,terminal,../assets/models/cube.obj,../assets/textures/switch_panel.bmp,0,1.9,-30.35,0,0,0,0.9,0.7,0.12

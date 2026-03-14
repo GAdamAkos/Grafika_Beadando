@@ -97,7 +97,7 @@ static int str_ieq(const char* a, const char* b) {
 }
 
 static int is_interactable_type(const char* type) {
-    return str_ieq(type, "switch");
+    return str_ieq(type, "switch") || str_ieq(type, "terminal");
 }
 
 static int find_or_add_model(Scene* sc, const char* path) {
@@ -845,7 +845,7 @@ void scene_interact(Scene* sc, int picked_index) {
     {
         SceneObject* o = &sc->objects[picked_index];
 
-        if (str_ieq(o->type, "switch")) {
+                if (str_ieq(o->type, "switch")) {
             if (o->state == 0) {
                 o->state = 1;
                 scene_recompute_power(sc);
@@ -860,6 +860,9 @@ void scene_interact(Scene* sc, int picked_index) {
             } else {
                 printf("REPAIR: %s is already fixed\n", o->id);
             }
+        }
+        else if (str_ieq(o->type, "terminal")) {
+            printf("TERMINAL: %s ready for activation\n", o->id);
         }
     }
 }
