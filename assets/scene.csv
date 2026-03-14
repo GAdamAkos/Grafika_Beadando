@@ -11,9 +11,9 @@ switch_2,switch,../assets/models/cube.obj,../assets/textures/switch_panel.bmp,-1
 switch_3,switch,../assets/models/cube.obj,../assets/textures/switch_panel.bmp,17.78,1.2,8,0,-90,0,0.9,1.1,0.12
 
 # ----- Wall lamps near each switch -----
-lamp_1,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,-10,2.45,-17.58,0,0,0,0.55,0.30,0.18
-lamp_2,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,-17.58,2.45,0,0,90,0,0.55,0.30,0.18
-lamp_3,lamp,../assets/models/cube.obj,../assets/textures/cube.bmp,17.58,2.45,8,0,-90,0,0.55,0.30,0.18
+lamp_1,lamp,../assets/models/cube.obj,../assets/textures/lamp_texture.bmp,-10,2.45,-17.58,0,0,0,0.55,0.30,0.18
+lamp_2,lamp,../assets/models/cube.obj,../assets/textures/lamp_texture.bmp,-17.58,2.45,0,0,90,0,0.55,0.30,0.18
+lamp_3,lamp,../assets/models/cube.obj,../assets/textures/lamp_texture.bmp,17.58,2.45,8,0,-90,0,0.55,0.30,0.18
 
 # ----- Props -----
 block_1,obstacle,../assets/models/cube.obj,../assets/textures/cube.bmp,5,0,5,0,0,0,1,1,1
