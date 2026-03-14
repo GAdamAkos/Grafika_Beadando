@@ -46,9 +46,9 @@ static void apply_lighting(float intensity) {
 
     {
         GLfloat material_specular[] = {
-            0.30f * intensity,
-            0.30f * intensity,
-            0.30f * intensity,
+            0.22f * intensity,
+            0.22f * intensity,
+            0.22f * intensity,
             1.0f
         };
         GLfloat material_shininess[] = { 24.0f };
@@ -59,23 +59,23 @@ static void apply_lighting(float intensity) {
 
     {
         GLfloat ambient[] = {
-            0.18f * intensity,
-            0.18f * intensity,
-            0.20f * intensity,
+            0.10f * intensity,
+            0.10f * intensity,
+            0.12f * intensity,
             1.0f
         };
 
         GLfloat diffuse[] = {
-            0.85f * intensity,
-            0.85f * intensity,
-            0.80f * intensity,
+            0.42f * intensity,
+            0.42f * intensity,
+            0.40f * intensity,
             1.0f
         };
 
         GLfloat specular[] = {
-            0.30f * intensity,
-            0.30f * intensity,
-            0.30f * intensity,
+            0.18f * intensity,
+            0.18f * intensity,
+            0.18f * intensity,
             1.0f
         };
 
@@ -110,26 +110,28 @@ static void apply_dynamic_lights(Scene* scene, float master_intensity) {
             }
 
             {
+                float strength = pulse;
+
                 GLfloat position[] = { x, y, z, 1.0f };
 
                 GLfloat ambient[] = {
-                    0.04f * master_intensity * pulse,
-                    0.04f * master_intensity * pulse,
-                    0.03f * master_intensity * pulse,
+                    0.03f * master_intensity * strength,
+                    0.025f * master_intensity * strength,
+                    0.015f * master_intensity * strength,
                     1.0f
                 };
 
                 GLfloat diffuse[] = {
-                    0.90f * master_intensity * pulse,
-                    0.78f * master_intensity * pulse,
-                    0.42f * master_intensity * pulse,
+                    1.35f * master_intensity * strength,
+                    1.05f * master_intensity * strength,
+                    0.45f * master_intensity * strength,
                     1.0f
                 };
 
                 GLfloat specular[] = {
-                    0.28f * master_intensity * pulse,
-                    0.22f * master_intensity * pulse,
-                    0.12f * master_intensity * pulse,
+                    0.55f * master_intensity * strength,
+                    0.40f * master_intensity * strength,
+                    0.18f * master_intensity * strength,
                     1.0f
                 };
 
@@ -139,9 +141,9 @@ static void apply_dynamic_lights(Scene* scene, float master_intensity) {
                 glLightfv(light_ids[i], GL_DIFFUSE, diffuse);
                 glLightfv(light_ids[i], GL_SPECULAR, specular);
 
-                glLightf(light_ids[i], GL_CONSTANT_ATTENUATION, 1.0f);
-                glLightf(light_ids[i], GL_LINEAR_ATTENUATION, 0.04f);
-                glLightf(light_ids[i], GL_QUADRATIC_ATTENUATION, 0.01f);
+                glLightf(light_ids[i], GL_CONSTANT_ATTENUATION, 0.55f);
+                glLightf(light_ids[i], GL_LINEAR_ATTENUATION, 0.08f);
+                glLightf(light_ids[i], GL_QUADRATIC_ATTENUATION, 0.015f);
             }
         }
     }
@@ -331,6 +333,7 @@ int main(int argc, char* argv[]) {
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE);
     setup_projection(window_w, window_h);
     setup_fog(fog_density);
 

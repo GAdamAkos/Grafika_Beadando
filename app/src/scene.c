@@ -217,6 +217,18 @@ static void compute_object_aabb(SceneObject* o) {
     hy = 0.5f * o->sy;
     hz = 0.5f * o->sz;
 
+    if (fabsf(o->ry) > 0.001f) {
+        float angle = deg_to_rad(o->ry);
+        float c = fabsf(cosf(angle));
+        float s = fabsf(sinf(angle));
+
+        float rotated_hx = c * hx + s * hz;
+        float rotated_hz = s * hx + c * hz;
+
+        hx = rotated_hx;
+        hz = rotated_hz;
+    }
+
     o->box.min_x = o->px - hx;
     o->box.max_x = o->px + hx;
     o->box.min_y = o->py - hy;
@@ -304,6 +316,49 @@ static float lamp_pulse_value(Scene* sc, const SceneObject* lamp) {
     float phase = (n > 0) ? (float)n * 1.35f : 0.0f;
     return 0.55f + 0.45f * (0.5f + 0.5f * sinf(sc->animation_time * 4.0f + phase));
 }
+
+static void get_object_forward_from_ry(float ry_deg, float* fx, float* fz) {
+    float a = deg_to_rad(ry_deg);
+
+    if (fx) *fx = sinf(a);
+    if (fz) *fz = cosf(a);
+}
+
+static void draw_wall_lamp_glow(const SceneObject* o, float pulse, int active) {
+    float z = 0.515f;
+
+    (void)o;
+
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+
+    if (active) {
+        glColor3f(1.00f * pulse, 0.92f * pulse, 0.55f * pulse);
+    } else {
+        glColor3f(0.12f, 0.12f, 0.14f);
+    }
+
+    glBegin(GL_QUADS);
+    glVertex3f(-0.30f, -0.18f, z);
+    glVertex3f( 0.30f, -0.18f, z);
+    glVertex3f( 0.30f,  0.18f, z);
+    glVertex3f(-0.30f,  0.18f, z);
+    glEnd();
+
+    if (active) {
+        glColor3f(1.00f * pulse, 0.85f * pulse, 0.35f * pulse);
+
+        glBegin(GL_QUADS);
+        glVertex3f(-0.16f, -0.08f, z + 0.01f);
+        glVertex3f( 0.16f, -0.08f, z + 0.01f);
+        glVertex3f( 0.16f,  0.08f, z + 0.01f);
+        glVertex3f(-0.16f,  0.08f, z + 0.01f);
+        glEnd();
+    }
+
+    glEnable(GL_LIGHTING);
+}
+
 static float broken_switch_pulse(Scene* sc, const SceneObject* sw) {
     int n = extract_trailing_number(sw->id);
     float phase = (n > 0) ? (float)n * 0.9f : 0.0f;
@@ -793,10 +848,17 @@ bool scene_get_dynamic_light(
         if (!is_lamp_active(sc, o)) continue;
 
         if (current == active_index) {
-            if (x) *x = o->px;
-            if (y) *y = o->py + 0.15f;
-            if (z) *z = o->pz;
-            if (intensity) *intensity = lamp_pulse_value(sc, o);
+            float fx = 0.0f;
+            float fz = 1.0f;
+            float pulse = lamp_pulse_value(sc, o);
+
+            get_object_forward_from_ry(o->ry, &fx, &fz);
+
+            if (x) *x = o->px + fx * 0.42f;
+            if (y) *y = o->py;
+            if (z) *z = o->pz + fz * 0.42f;
+            if (intensity) *intensity = 0.45f + 1.8f * pulse;
+
             return true;
         }
 
@@ -864,30 +926,33 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
 }
 
         if (str_ieq(o->type, "lamp")) {
-            if (is_lamp_active(sc, o)) {
-                float pulse = lamp_pulse_value(sc, o);
+    int active = is_lamp_active(sc, o);
+    float pulse = lamp_pulse_value(sc, o);
 
-                glDisable(GL_TEXTURE_2D);
-                glDisable(GL_LIGHTING);
-                glColor3f(1.00f * pulse, 0.92f * pulse, 0.55f * pulse);
+    glColor3f(1.0f, 1.0f, 1.0f);
 
-                if (m->loaded) {
-                    draw_model(&m->model);
-                }
+    if (t->loaded && t->tex.id != 0) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, t->tex.id);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    }
 
-                glEnable(GL_LIGHTING);
-            } else {
-                glDisable(GL_TEXTURE_2D);
-                glDisable(GL_LIGHTING);
-                glColor3f(0.15f, 0.15f, 0.18f);
+    if (active) {
+        glColor3f(0.90f, 0.90f, 0.90f);
+    } else {
+        glColor3f(0.30f, 0.30f, 0.32f);
+    }
 
-                if (m->loaded) {
-                    draw_model(&m->model);
-                }
+    if (m->loaded) {
+        draw_model(&m->model);
+    }
 
-                glEnable(GL_LIGHTING);
-            }
-        }
+    if (t->loaded && t->tex.id != 0) {
+        glDisable(GL_TEXTURE_2D);
+    }
+
+    draw_wall_lamp_glow(o, active ? pulse : 0.0f, active);
+}
         else if (str_ieq(o->type, "switch")) {
     float pulse = broken_switch_pulse(sc, o);
 
