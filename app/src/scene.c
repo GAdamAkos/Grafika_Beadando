@@ -362,48 +362,100 @@ static void draw_wall_lamp_glow(const SceneObject* o, float pulse, int active) {
 static float broken_switch_pulse(Scene* sc, const SceneObject* sw) {
     int n = extract_trailing_number(sw->id);
     float phase = (n > 0) ? (float)n * 0.9f : 0.0f;
-    return 0.5f + 0.5f * sinf(sc->animation_time * 11.0f + phase);
+    return 0.5f
+    + 0.30f * sinf(sc->animation_time * 9.0f + phase)
+    + 0.20f * sinf(sc->animation_time * 23.0f + phase * 1.7f);
 }
 
 static void draw_switch_status_light(int repaired, float pulse) {
-    float z = 0.515f;
+    float z_outer = 0.516f;
+    float z_inner = 0.522f;
 
-    glBegin(GL_QUADS);
+    float outer_r, outer_g, outer_b;
+    float inner_r, inner_g, inner_b;
 
     if (repaired) {
-        glColor3f(0.20f, 1.00f, 0.25f);
+        outer_r = 0.05f;
+        outer_g = 0.30f + 0.10f * pulse;
+        outer_b = 0.05f;
+
+        inner_r = 0.25f;
+        inner_g = 0.95f;
+        inner_b = 0.20f;
     } else {
-        glColor3f(0.95f, 0.15f + 0.35f * pulse, 0.05f);
+        outer_r = 0.20f + 0.10f * pulse;
+        outer_g = 0.03f;
+        outer_b = 0.02f;
+
+        inner_r = 0.95f;
+        inner_g = 0.18f + 0.08f * pulse;
+        inner_b = 0.08f;
     }
 
-    glVertex3f(-0.10f, 0.18f, z);
-    glVertex3f( 0.10f, 0.18f, z);
-    glVertex3f( 0.10f, 0.34f, z);
-    glVertex3f(-0.10f, 0.34f, z);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
 
+    /* külső glow */
+    glColor4f(outer_r, outer_g, outer_b, 0.85f);
+    glBegin(GL_QUADS);
+    glVertex3f(-0.14f, 0.14f, z_outer);
+    glVertex3f( 0.14f, 0.14f, z_outer);
+    glVertex3f( 0.14f, 0.36f, z_outer);
+    glVertex3f(-0.14f, 0.36f, z_outer);
     glEnd();
+
+    /* belső fényes mag */
+    glColor3f(inner_r, inner_g, inner_b);
+    glBegin(GL_QUADS);
+    glVertex3f(-0.09f, 0.18f, z_inner);
+    glVertex3f( 0.09f, 0.18f, z_inner);
+    glVertex3f( 0.09f, 0.32f, z_inner);
+    glVertex3f(-0.09f, 0.32f, z_inner);
+    glEnd();
+
+    glEnable(GL_LIGHTING);
 }
 
 static void draw_switch_sparks(Scene* sc, const SceneObject* sw) {
     float pulse = broken_switch_pulse(sc, sw);
+    float t = sc->animation_time;
+    float z1 = 0.525f;
+    float z2 = 0.80f;
 
-    if (pulse < 0.78f) {
+    if (pulse < 0.82f) {
         return;
     }
 
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+
+    /* külső narancs szikrák */
     glLineWidth(2.0f);
-    glColor3f(1.00f, 0.85f + 0.15f * pulse, 0.15f);
+    glColor3f(1.00f, 0.65f + 0.20f * pulse, 0.10f);
 
     glBegin(GL_LINES);
 
-    glVertex3f( 0.03f, -0.02f, 0.52f); glVertex3f( 0.18f,  0.12f, 0.78f);
-    glVertex3f(-0.02f, -0.05f, 0.52f); glVertex3f(-0.16f,  0.08f, 0.75f);
-    glVertex3f( 0.00f,  0.02f, 0.52f); glVertex3f( 0.06f, -0.14f, 0.76f);
-    glVertex3f( 0.08f,  0.03f, 0.52f); glVertex3f( 0.22f, -0.04f, 0.77f);
-    glVertex3f(-0.06f,  0.04f, 0.52f); glVertex3f(-0.20f,  0.16f, 0.76f);
+    glVertex3f( 0.04f, -0.03f, z1); glVertex3f( 0.16f + 0.03f * sinf(t * 17.0f),  0.09f, z2);
+    glVertex3f(-0.01f,  0.02f, z1); glVertex3f(-0.14f + 0.02f * cosf(t * 13.0f),  0.11f, z2 - 0.03f);
+    glVertex3f( 0.02f, -0.01f, z1); glVertex3f( 0.08f, -0.13f + 0.02f * sinf(t * 19.0f), z2 - 0.02f);
+
+    if (pulse > 0.90f) {
+        glVertex3f( 0.06f,  0.01f, z1); glVertex3f( 0.21f, -0.03f, z2);
+        glVertex3f(-0.04f,  0.00f, z1); glVertex3f(-0.18f,  0.15f, z2 - 0.01f);
+    }
 
     glEnd();
+
+    /* belső fehér magvonalak */
     glLineWidth(1.0f);
+    glColor3f(1.00f, 0.95f, 0.75f);
+
+    glBegin(GL_LINES);
+    glVertex3f( 0.04f, -0.03f, z1 + 0.002f); glVertex3f( 0.11f,  0.05f, z2 - 0.08f);
+    glVertex3f(-0.01f,  0.02f, z1 + 0.002f); glVertex3f(-0.09f,  0.07f, z2 - 0.08f);
+    glEnd();
+
+    glEnable(GL_LIGHTING);
 }
 
 static int count_active_switches(Scene* sc) {
