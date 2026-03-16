@@ -193,6 +193,4 @@ A program jelenleg már teljesíti a beadandó minimális elvárásainak döntő
 - ütközésvizsgálat,
 - köd.
 
-A végleges leadás előtt még az assets csomag és a README véglegesítése szükséges.
-
 ---
