@@ -261,54 +261,6 @@ static void draw_crosshair(int w, int h) {
     glPopAttrib();
 }
 
-static void draw_victory_overlay(int w, int h) {
-    float box_w = 520.0f;
-    float box_h = 120.0f;
-    float x0 = (w - box_w) * 0.5f;
-    float y0 = h * 0.18f;
-    float x1 = x0 + box_w;
-    float y1 = y0 + box_h;
-
-    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT);
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    begin_2d(w, h);
-
-    glColor4f(0.02f, 0.05f, 0.06f, 0.68f);
-    glBegin(GL_QUADS);
-    glVertex2f(x0, y0);
-    glVertex2f(x1, y0);
-    glVertex2f(x1, y1);
-    glVertex2f(x0, y1);
-    glEnd();
-
-    glColor4f(0.30f, 0.85f, 0.55f, 0.85f);
-    glLineWidth(2.0f);
-    glBegin(GL_LINE_LOOP);
-    glVertex2f(x0, y0);
-    glVertex2f(x1, y0);
-    glVertex2f(x1, y1);
-    glVertex2f(x0, y1);
-    glEnd();
-
-    glColor4f(0.30f, 0.85f, 0.55f, 0.20f);
-    glBegin(GL_QUADS);
-    glVertex2f(x0 + 16.0f, y0 + 18.0f);
-    glVertex2f(x1 - 16.0f, y0 + 18.0f);
-    glVertex2f(x1 - 16.0f, y0 + 34.0f);
-    glVertex2f(x0 + 16.0f, y0 + 34.0f);
-    glEnd();
-
-    end_2d();
-
-    glPopAttrib();
-}
 
 static void setup_fog(float density) {
     if (density < 0.0f) {

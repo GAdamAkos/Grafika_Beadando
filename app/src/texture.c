@@ -6,16 +6,6 @@
 
 #include <GL/glu.h>
 
-static void apply_color_key_rgba(SDL_Surface* surface, Uint8 r, Uint8 g, Uint8 b) {
-    // Convert to 32-bit RGBA if needed
-    SDL_Surface* converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_ABGR8888, 0);
-    if (!converted) return;
-
-    // Copy back into original by swapping pointers (we'll free original pixels later via SDL_FreeSurface on converted)
-    // Instead, we simply modify converted and then replace the caller surface externally in load function.
-    // This helper is used only inside load_texture_bmp where we control the flow.
-    (void)r; (void)g; (void)b;
-}
 
 bool load_texture_bmp(Texture* out, const char* path, bool use_color_key, Uint8 r, Uint8 g, Uint8 b) {
     if (!out || !path) return false;
