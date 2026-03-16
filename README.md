@@ -1,179 +1,196 @@
-# Substation Night Patrol — Féléves feladat specifikáció (Grafika / C)
+# Substation Night Patrol — Féléves grafika beadandó
 
-## 1) Koncepció
+## 1. Projekt leírása
 
-A **Substation Night Patrol** egy kisméretű, belső nézetes (FPS) 3D bejárható mini-játék, amely egy **ködös, éjszakai alállomás / trafóudvar** környezetében játszódik.  
-A játékos bejárja a területet, **interaktív kapcsolószekrényeket** (control box) keres, majd ezek kapcsolóit kezelve **szektoronként visszakapcsolja a világítást** (reflektorok, jelzőfények).
+A **Substation Night Patrol** egy belső nézetes, bejárható 3D grafikus program C nyelven, **SDL2 + OpenGL** használatával.
+A program egy ködös, éjszakai **alállomás / trafóudvar** környezetét jeleníti meg, ahol a játékosnak a terület bejárása közben különböző kapcsolókat kell aktiválnia, hogy visszaállítsa a világítást és elérje a végső terminált.
 
-A projekt célja, hogy a valós időben futó 3D grafikus programozási ismereteimet bizonyítsam **C nyelven**, **SDL2 + OpenGL** használatával, tiszta, jól strukturált kódbázissal és reprodukálható build folyamattal.
-
----
-
-## 2) Játékmenet (core loop)
-
-1. **Bejárás**: a trafóudvar felfedezése FPS kamerával (billentyűzet + egér).
-2. **Kijelölés**: interaktív objektum kijelölése egérkattintással.
-3. **Interakció**: a kijelölt kapcsoló aktiválása, amely:
-   - egy vagy több fényt kapcsol (reflektor, jelzőfény),
-   - vizuális visszajelzést ad (pl. LED villogás),
-   - opcionálisan esemény-effektet indít (pl. szikra/füst részecske).
-4. A környezetben **időfüggő animációk** futnak (pl. ventilátor forgása, jelzőfény pulzálása), amelyek **deltaTime** alapján frissülnek (nem képkockaszám alapján).
+A beadandó célja a valós idejű 3D grafikai programozási alapismeretek bemutatása:
+- kamerakezelés,
+- modellbetöltés fájlból,
+- textúrázás,
+- fények kezelése,
+- interaktív objektumok,
+- időfüggő animációk,
+- köd és ütközésvizsgálat.
 
 ---
 
-## 3) Kötelező elvárások (oktatói specifikáció szerint)
+## 2. Játékmenet és működés
 
-A program az alábbi minimális követelményeket valósítja meg:
+A játékos FPS nézetben bejárja az alállomás területét. A képernyő közepén található célkereszt segítségével ki lehet jelölni az interaktív objektumokat. Az **E** billentyűvel aktiválhatók a kapcsolók.
+
+A kapcsolók hatására:
+- egyes lámpák bekapcsolnak,
+- dinamikus fényforrások aktiválódnak,
+- bizonyos objektumok animációja megváltozik,
+- a küldetés fokozatosan előrehalad.
+
+Ha a szükséges rendszerek helyreálltak, a játékos a végső terminálnál lezárhatja a küldetést.
+
+---
+
+## 3. Minimális követelmények teljesülése
 
 ### 3.1 Kamerakezelés
-- A virtuális tér bejárható **billentyűzettel és/vagy egérrel** (FPS kamera).
+A virtuális tér billentyűzettel és egérrel bejárható.
+- **W / A / S / D**: mozgás
+- **Egér**: körbenézés
 
-### 3.2 Térbeli objektumok betöltése fájlból
-- A jelenetben **3D modellek** szerepelnek, amelyek **külön fájlokból** tölthetők be (pl. OBJ).
-- A modellek az assets csomagban: `assets/models/`.
+### 3.2 Objektumok külön fájlból
+A jelenet 3D modelljei külön fájlból töltődnek be.
+A projekt jelenlegi állapotában OBJ modellek használhatók, a jelenet elemei adatvezérelt módon kerülnek betöltésre.
 
-### 3.3 Interaktivitás + animáció
-- A program **interaktív**.
-- Modellek és/vagy fények billentyűzettel/egérrel változtathatók.
-- Vannak **animált** részek (időfüggő frissítéssel).
+### 3.3 Interaktivitás és animáció
+A program interaktív:
+- a játékos kapcsolókat aktiválhat,
+- a világítás állapota változik,
+- egyes elemek animáltak,
+- az animációk **delta time** alapján frissülnek.
 
 ### 3.4 Textúrák
-- A modellek **textúrázottak** (PNG/JPG), az assets csomagban: `assets/textures/`.
+A modellek textúrázottak.
+A jelenlegi verzió BMP textúrákat használ.
 
 ### 3.5 Fények állítása
-- A fények paraméterei **`+`** és **`-`** billentyűkkel állíthatók (intenzitás / komponensek).
+A globális fényintenzitás állítható:
+- **+ / -**: fényerő növelése / csökkentése
 
 ### 3.6 Használati útmutató
-- **`F1`** megnyomására megjelenik egy in-program leírás (help overlay) a kezelésről és funkciókról.
+A program tartalmaz beépített súgót:
+- **F1**: segítségképernyő megjelenítése / elrejtése
 
 ---
 
-## 4) Többletfunkciók (jobb jegyért)
+## 4. Megvalósított többletfunkciók
 
-Tervezett / megvalósított plusz funkciók (mindegyik +1 jegy, max. 5-ig):
+A kötelező követelményeken túl a program jelenleg az alábbi plusz funkciókat tartalmazza:
 
-1. **Köd (dinamikus):** ködsűrűség valós időben állítható.
-2. **Ütközésvizsgálat (AABB):** a kamera nem mehet át kerítésen/objektumokon.
-3. **Objektum kijelölése egérrel (picking):** kattintással kijelölhető objektum (ray casting / color picking).
-4. *(Opcionális)* **Részecskerendszer:** szikra vagy füst effekt eseményhez kötve.
+1. **Köd**
+   - A jelenet ködhatást használ.
+   - A köd sűrűsége futás közben állítható.
 
-> Cél: legalább **3** többletfunkció megvalósítása.
+2. **Ütközésvizsgálat**
+   - A kamera nem tud szabadon átmenni minden objektumon.
+   - A program AABB alapú collision ellenőrzést használ.
+
+3. **Dinamikus fények**
+   - Az interaktív elemekhez kapcsolódóan dinamikus fényforrások aktiválódnak.
+   - A lámpák intenzitása pulzáló hatást is használhat.
+
+4. **Objektum kijelölés célkereszttel**
+   - A program a kamera nézeti iránya alapján kijelöli a célkereszt alatt lévő objektumot.
+   - Az interakció az **E** billentyűvel történik.
 
 ---
 
-## 5) Irányítás (Controls)
+## 5. Irányítás
 
-### Kamera
-- **W/A/S/D** — mozgás
+### Mozgás és nézet
+- **W / A / S / D** — mozgás
 - **Egér** — körbenézés
-- **Shift** — gyorsabb mozgás (opcionális)
-- **Space / Ctrl** — fel / le (opcionális, ha implementálva)
 
 ### Interakció
-- **Bal egérgomb** — objektum kijelölése
-- **E** — interakció a kijelölt objektummal (kapcsoló)
-- **R** — kijelölés törlése (opcionális)
+- **E** — interakció a kijelölt objektummal
 
-### Fények / Effektek
+### Fények és köd
 - **+ / -** — fényintenzitás állítása
-- **[ / ]** — ködsűrűség csökkentése / növelése
+- **, / .** — ködsűrűség csökkentése / növelése
 
-### Súgó és kilépés
-- **F1** — súgó ki/be
+### Egyéb
+- **F1** — súgó megjelenítése / elrejtése
+- **G** — debug rács ki/be
 - **Esc** — kilépés
 
 ---
 
-## 6) Technikai terjedelem
+## 6. Technikai jellemzők
 
-### 6.1 Megjelenítés (render)
-- SDL2 ablak + OpenGL kontextus
-- Ablak átméretezés támogatása helyes képaránnyal
-- Shader-alapú megjelenítés (ajánlott)
-- Textúrázott mesh-ek (OBJ) alap fényeléssel (ambient + diffuse + specular vagy hasonló)
-
-### 6.2 Adatvezérelt jelenet (repetitív kód kerülése)
-- A jelenet objektumlistája és elhelyezése konfigurációs fájlban legyen (pl. `assets/config/scene.csv`)
-- A program innen tölti be az objektumokat, transzformációkat és anyag/texture hozzárendeléseket
-
-### 6.3 Kódminőségi elvárások
-- Angol elnevezések a forráskódban
-- Minimális globális változók
-- Moduláris felépítés (header fájlokban dokumentált interfészek)
-- `make`-kel forduljon, törekvés **warning nélkül**
-- Külső kód/asset esetén licenc + forrás feltüntetése
+- **Nyelv:** C
+- **Könyvtárak:** SDL2, OpenGL, GLU
+- **Build rendszer:** make
+- **Ablakkezelés:** átméretezhető SDL ablak
+- **Vetítés:** perspektivikus kamera
+- **Jelenetkezelés:** adatvezérelt objektumlista CSV alapján
+- **Textúrázás:** BMP alapú textúrák
+- **Animáció:** időfüggő frissítés (`delta_time`)
 
 ---
 
-## 7) Repository struktúra
+## 7. Projektstruktúra
 
-A repository **csak a forráskódot** tartalmazza. Az assets külön ZIP-ben van kezelve.
-
-```
+```text
 /app
   /src
   /include
-  /shaders
-  main.c
+  /ext
   Makefile
-/demos
+/gyakorlatok vagy /demos
 README.md
-.gitignore
-LICENSE
 ```
+
+A program fő belépési pontja:
+- `app/src/main.c`
+
+A futtatáshoz szükséges assetek külön `assets` könyvtárban találhatók.
+A végleges beadásnál az `assets` mappa külön ZIP-ben kerül megosztásra, és annak linkje a README-ben szerepel majd.
 
 ---
 
-## 8) Assets csomag (külső ZIP)
+## 8. Assets
 
-A repository **nem tartalmazza** az `assets/` mappát.  
-Az assets csomag ZIP-ben kerül feltöltésre külső tárhelyre, és a link itt szerepel:
+A projekt az alábbi asset típusokat használja:
+- 3D modellek (`.obj`)
+- textúrák (`.bmp`)
+- jelenetleírás (`scene.csv`)
 
-**Assets ZIP link:** majd itt lesz a ink
+Ajánlott struktúra:
 
-Elvárt struktúra a ZIP-ben:
-```
+```text
 /assets
   /models
     *.obj
   /textures
-    *.png
-  /config
-    scene.csv
+    *.bmp
+  scene.csv
 ```
 
-Megjegyzések:
-- Hordozható útvonalak (kerülendő a backslash a tárolt path-okban).
-- Következetes fájlnév-kis/nagybetű használat (más rendszereken számít).
+**Assets ZIP link:** ide kerül a végleges link
 
 ---
 
-## 9) Fordítás és futtatás (Windows + C SDK)
+## 9. Fordítás és futtatás
 
-A projekt a tantárgyhoz adott **C SDK** (MinGW + SDL2 + OpenGL) környezettel fordul.
+A projekt a tantárgyhoz használt C/SDL2 fejlesztőkörnyezettel fordítható.
 
-### Build lépések
-1. A C SDK mappában indítsd el a `shell.bat` fájlt (beállítja a PATH-ot a gcc/make-hez).
-2. A megnyíló terminálban lépj a projektre:
-   ```
-   cd path\to\your_repo\app
-   ```
-3. Fordítás:
-   ```
-   make
-   ```
-4. Futtatás terminálból:
-   ```
-   .\main.exe
-   ```
+### Fordítás
+Lépj be az `app` mappába, majd futtasd:
+
+```bash
+make
+```
+
+### Futtatás
+A lefordított program futtatása az `app` mappából történik.
+A jelenlegi projektben a futtatható állomány neve:
+
+```bash
+substation.exe
+```
 
 ---
 
-## 10) Külső források / attribúció
+## 10. Jelenlegi állapot
 
-Ha külső asset vagy kódrészlet kerül felhasználásra, itt fogom feltüntetni.
+A program jelenleg már teljesíti a beadandó minimális elvárásainak döntő részét:
+- bejárható 3D tér,
+- külön fájlból töltött modellek,
+- textúrázott objektumok,
+- interaktív elemek,
+- animációk,
+- fénykezelés,
+- súgó,
+- ütközésvizsgálat,
+- köd.
 
-### Modellek / textúrák
-- Forrás:
-- Licenc:
-- Attribúció:
+---
