@@ -28,23 +28,6 @@ typedef struct TextureEntry {
     bool loaded;
 } TextureEntry;
 
-typedef struct SceneObject {
-    char id[64];
-    char type[32];
-
-    int model_idx;
-    int tex_idx;
-
-    float px, py, pz;
-    float rx, ry, rz;
-    float sx, sy, sz;
-
-    float base_px, base_py, base_pz;
-
-    int state;
-    AABB box;
-} SceneObject;
-
 struct Scene {
     ModelEntry* models;
     int model_count;
@@ -54,7 +37,7 @@ struct Scene {
     int tex_count;
     int tex_cap;
 
-    SceneObject* objects;
+    SceneEntity* objects;
     int obj_count;
     int obj_cap;
 
@@ -144,11 +127,11 @@ static int find_or_add_texture(Scene* sc, const char* path) {
     return sc->tex_count++;
 }
 
-static int is_gate_object(const SceneObject* o) {
+static int is_gate_object(const SceneEntity* o) {
     return (o != NULL && str_ieq(o->type, "gate"));
 }
 
-static int gate_hinge_sign(const SceneObject* o) {
+static int gate_hinge_sign(const SceneEntity* o) {
     if (o == NULL) {
         return 0;
     }
@@ -164,7 +147,7 @@ static int gate_hinge_sign(const SceneObject* o) {
     return 0;
 }
 
-static void compute_gate_aabb(SceneObject* o) {
+static void compute_gate_aabb(SceneEntity* o) {
     float half_w;
     float half_h;
     float half_d;
@@ -203,7 +186,7 @@ static void compute_gate_aabb(SceneObject* o) {
     o->box.max_z = center_z + hz;
 }
 
-static void compute_object_aabb(SceneObject* o) {
+static void compute_object_aabb(SceneEntity* o) {
     float hx;
     float hy;
     float hz;
@@ -237,12 +220,12 @@ static void compute_object_aabb(SceneObject* o) {
     o->box.max_z = o->pz + hz;
 }
 
-static void add_object(Scene* sc, SceneObject obj) {
+static void add_object(Scene* sc, SceneEntity obj) {
     compute_object_aabb(&obj);
 
     if (sc->obj_count == sc->obj_cap) {
         sc->obj_cap = (sc->obj_cap == 0) ? 16 : sc->obj_cap * 2;
-        sc->objects = (SceneObject*)realloc(sc->objects, sizeof(SceneObject) * sc->obj_cap);
+        sc->objects = (SceneEntity*)realloc(sc->objects, sizeof(SceneEntity) * sc->obj_cap);
     }
 
     sc->objects[sc->obj_count++] = obj;
@@ -281,14 +264,14 @@ static int extract_trailing_number(const char* id) {
     return atoi(id + start);
 }
 
-static SceneObject* find_switch_for_lamp(Scene* sc, const SceneObject* lamp) {
+static SceneEntity* find_switch_for_lamp(Scene* sc, const SceneEntity* lamp) {
     int lamp_num = extract_trailing_number(lamp->id);
     if (lamp_num < 0) {
         return NULL;
     }
 
     for (int i = 0; i < sc->obj_count; i++) {
-        SceneObject* obj = &sc->objects[i];
+        SceneEntity* obj = &sc->objects[i];
 
         if (!str_ieq(obj->type, "switch")) {
             continue;
@@ -302,8 +285,8 @@ static SceneObject* find_switch_for_lamp(Scene* sc, const SceneObject* lamp) {
     return NULL;
 }
 
-static int is_lamp_active(Scene* sc, const SceneObject* lamp) {
-    SceneObject* linked_switch = find_switch_for_lamp(sc, lamp);
+static int is_lamp_active(Scene* sc, const SceneEntity* lamp) {
+    SceneEntity* linked_switch = find_switch_for_lamp(sc, lamp);
     if (!linked_switch) {
         return 0;
     }
@@ -311,7 +294,7 @@ static int is_lamp_active(Scene* sc, const SceneObject* lamp) {
     return (linked_switch->state == 1);
 }
 
-static float lamp_pulse_value(Scene* sc, const SceneObject* lamp) {
+static float lamp_pulse_value(Scene* sc, const SceneEntity* lamp) {
     int n = extract_trailing_number(lamp->id);
     float phase = (n > 0) ? (float)n * 1.35f : 0.0f;
     return 0.55f + 0.45f * (0.5f + 0.5f * sinf(sc->animation_time * 4.0f + phase));
@@ -324,7 +307,7 @@ static void get_object_forward_from_ry(float ry_deg, float* fx, float* fz) {
     if (fz) *fz = cosf(a);
 }
 
-static void draw_wall_lamp_glow(const SceneObject* o, float pulse, int active) {
+static void draw_wall_lamp_glow(const SceneEntity* o, float pulse, int active) {
     float z = 0.515f;
 
     (void)o;
@@ -359,12 +342,12 @@ static void draw_wall_lamp_glow(const SceneObject* o, float pulse, int active) {
     glEnable(GL_LIGHTING);
 }
 
-static float broken_switch_pulse(Scene* sc, const SceneObject* sw) {
+static float broken_switch_pulse(Scene* sc, const SceneEntity* sw) {
     int n = extract_trailing_number(sw->id);
     float phase = (n > 0) ? (float)n * 0.9f : 0.0f;
     return 0.5f
-    + 0.30f * sinf(sc->animation_time * 9.0f + phase)
-    + 0.20f * sinf(sc->animation_time * 23.0f + phase * 1.7f);
+        + 0.30f * sinf(sc->animation_time * 9.0f + phase)
+        + 0.20f * sinf(sc->animation_time * 23.0f + phase * 1.7f);
 }
 
 static void draw_switch_status_light(int repaired, float pulse) {
@@ -395,7 +378,6 @@ static void draw_switch_status_light(int repaired, float pulse) {
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
 
-    /* külső glow */
     glColor4f(outer_r, outer_g, outer_b, 0.85f);
     glBegin(GL_QUADS);
     glVertex3f(-0.14f, 0.14f, z_outer);
@@ -404,7 +386,6 @@ static void draw_switch_status_light(int repaired, float pulse) {
     glVertex3f(-0.14f, 0.36f, z_outer);
     glEnd();
 
-    /* belső fényes mag */
     glColor3f(inner_r, inner_g, inner_b);
     glBegin(GL_QUADS);
     glVertex3f(-0.09f, 0.18f, z_inner);
@@ -416,7 +397,7 @@ static void draw_switch_status_light(int repaired, float pulse) {
     glEnable(GL_LIGHTING);
 }
 
-static void draw_switch_sparks(Scene* sc, const SceneObject* sw) {
+static void draw_switch_sparks(Scene* sc, const SceneEntity* sw) {
     float pulse = broken_switch_pulse(sc, sw);
     float t = sc->animation_time;
     float z1 = 0.525f;
@@ -429,7 +410,6 @@ static void draw_switch_sparks(Scene* sc, const SceneObject* sw) {
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
 
-    /* külső narancs szikrák */
     glLineWidth(2.0f);
     glColor3f(1.00f, 0.65f + 0.20f * pulse, 0.10f);
 
@@ -446,7 +426,6 @@ static void draw_switch_sparks(Scene* sc, const SceneObject* sw) {
 
     glEnd();
 
-    /* belső fehér magvonalak */
     glLineWidth(1.0f);
     glColor3f(1.00f, 0.95f, 0.75f);
 
@@ -478,7 +457,7 @@ static void scene_recompute_power(Scene* sc) {
 
 static void update_gate_transforms(Scene* sc) {
     for (int i = 0; i < sc->obj_count; i++) {
-        SceneObject* o = &sc->objects[i];
+        SceneEntity* o = &sc->objects[i];
 
         if (!is_gate_object(o)) {
             continue;
@@ -568,7 +547,7 @@ static bool ray_aabb_hit(
     }
 }
 
-static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
+static void draw_ground_plane(TextureEntry* t, const SceneEntity* o) {
     if (!t || !t->loaded || t->tex.id == 0) {
         return;
     }
@@ -606,7 +585,7 @@ static void draw_ground_plane(TextureEntry* t, const SceneObject* o) {
     glDisable(GL_TEXTURE_2D);
 }
 
-static int is_fence_like_object(const SceneObject* o, const TextureEntry* t) {
+static int is_fence_like_object(const SceneEntity* o, const TextureEntry* t) {
     if (o != NULL) {
         if (strncmp(o->id, "fence_", 6) == 0) {
             return 1;
@@ -633,7 +612,6 @@ static float compute_fence_brightness(float master_light) {
         master_light = 2.0f;
     }
 
-    /* 0.2 -> 0.12, 1.0 -> 0.55, 2.0 -> 1.00 */
     return 0.022222f + 0.488889f * master_light;
 }
 
@@ -686,7 +664,7 @@ bool scene_init(Scene** out_scene, const char* csv_path) {
                     int midx = find_or_add_model(sc, model_path);
                     int tidx = find_or_add_texture(sc, tex_path);
 
-                    SceneObject obj;
+                    SceneEntity obj;
                     memset(&obj, 0, sizeof(obj));
 
                     strncpy(obj.id, id, sizeof(obj.id) - 1);
@@ -758,23 +736,23 @@ void scene_update(Scene* sc, double delta_time) {
     sc->animation_time += (float)delta_time;
 
     {
-    float speed = 180.0f * (float)delta_time;
+        float speed = 180.0f * (float)delta_time;
 
-    if (sc->gate_open_angle < sc->gate_target_angle) {
-        sc->gate_open_angle += speed;
-        if (sc->gate_open_angle > sc->gate_target_angle) {
-            sc->gate_open_angle = sc->gate_target_angle;
-        }
-    }
-    else if (sc->gate_open_angle > sc->gate_target_angle) {
-        sc->gate_open_angle -= speed;
         if (sc->gate_open_angle < sc->gate_target_angle) {
-            sc->gate_open_angle = sc->gate_target_angle;
+            sc->gate_open_angle += speed;
+            if (sc->gate_open_angle > sc->gate_target_angle) {
+                sc->gate_open_angle = sc->gate_target_angle;
+            }
+        }
+        else if (sc->gate_open_angle > sc->gate_target_angle) {
+            sc->gate_open_angle -= speed;
+            if (sc->gate_open_angle < sc->gate_target_angle) {
+                sc->gate_open_angle = sc->gate_target_angle;
+            }
         }
     }
-}
 
-update_gate_transforms(sc);
+    update_gate_transforms(sc);
 }
 
 bool scene_collides(Scene* sc, const AABB* player_box) {
@@ -843,9 +821,9 @@ void scene_interact(Scene* sc, int picked_index) {
     if (picked_index < 0 || picked_index >= sc->obj_count) return;
 
     {
-        SceneObject* o = &sc->objects[picked_index];
+        SceneEntity* o = &sc->objects[picked_index];
 
-                if (str_ieq(o->type, "switch")) {
+        if (str_ieq(o->type, "switch")) {
             if (o->state == 0) {
                 o->state = 1;
                 scene_recompute_power(sc);
@@ -875,7 +853,7 @@ int scene_get_dynamic_light_count(Scene* sc) {
     }
 
     for (int i = 0; i < sc->obj_count; i++) {
-        SceneObject* o = &sc->objects[i];
+        SceneEntity* o = &sc->objects[i];
 
         if (!str_ieq(o->type, "lamp")) continue;
         if (is_lamp_active(sc, o)) count++;
@@ -897,7 +875,7 @@ bool scene_get_dynamic_light(
     }
 
     for (int i = 0; i < sc->obj_count; i++) {
-        SceneObject* o = &sc->objects[i];
+        SceneEntity* o = &sc->objects[i];
 
         if (!str_ieq(o->type, "lamp")) continue;
         if (!is_lamp_active(sc, o)) continue;
@@ -921,6 +899,18 @@ bool scene_get_dynamic_light(
     }
 
     return false;
+}
+
+const SceneEntity* scene_get_entity(const Scene* sc, int index) {
+    if (!sc) {
+        return NULL;
+    }
+
+    if (index < 0 || index >= sc->obj_count) {
+        return NULL;
+    }
+
+    return &sc->objects[index];
 }
 
 static void draw_aabb_lines(const AABB* b) {
@@ -954,7 +944,7 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
     }
 
     for (int i = 0; i < sc->obj_count; i++) {
-        SceneObject* o = &sc->objects[i];
+        SceneEntity* o = &sc->objects[i];
         ModelEntry* m = &sc->models[o->model_idx];
         TextureEntry* t = &sc->textures[o->tex_idx];
 
@@ -978,65 +968,65 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
             glRotatef(o->ry, 0.f, 1.f, 0.f);
             glRotatef(o->rz, 0.f, 0.f, 1.f);
             glScalef(o->sx, o->sy, o->sz);
-}
+        }
 
         if (str_ieq(o->type, "lamp")) {
-    int active = is_lamp_active(sc, o);
-    float pulse = lamp_pulse_value(sc, o);
+            int active = is_lamp_active(sc, o);
+            float pulse = lamp_pulse_value(sc, o);
 
-    glColor3f(1.0f, 1.0f, 1.0f);
+            glColor3f(1.0f, 1.0f, 1.0f);
 
-    if (t->loaded && t->tex.id != 0) {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, t->tex.id);
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    }
+            if (t->loaded && t->tex.id != 0) {
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, t->tex.id);
+                glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            }
 
-    if (active) {
-        glColor3f(0.90f, 0.90f, 0.90f);
-    } else {
-        glColor3f(0.30f, 0.30f, 0.32f);
-    }
+            if (active) {
+                glColor3f(0.90f, 0.90f, 0.90f);
+            } else {
+                glColor3f(0.30f, 0.30f, 0.32f);
+            }
 
-    if (m->loaded) {
-        draw_model(&m->model);
-    }
+            if (m->loaded) {
+                draw_model(&m->model);
+            }
 
-    if (t->loaded && t->tex.id != 0) {
-        glDisable(GL_TEXTURE_2D);
-    }
+            if (t->loaded && t->tex.id != 0) {
+                glDisable(GL_TEXTURE_2D);
+            }
 
-    draw_wall_lamp_glow(o, active ? pulse : 0.0f, active);
-}
+            draw_wall_lamp_glow(o, active ? pulse : 0.0f, active);
+        }
         else if (str_ieq(o->type, "switch")) {
-    float pulse = broken_switch_pulse(sc, o);
+            float pulse = broken_switch_pulse(sc, o);
 
-    glColor3f(1.0f, 1.0f, 1.0f);
+            glColor3f(1.0f, 1.0f, 1.0f);
 
-    if (t->loaded && t->tex.id != 0) {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, t->tex.id);
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    }
+            if (t->loaded && t->tex.id != 0) {
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, t->tex.id);
+                glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            }
 
-    if (m->loaded) {
-        draw_model(&m->model);
-    }
+            if (m->loaded) {
+                draw_model(&m->model);
+            }
 
-    if (t->loaded && t->tex.id != 0) {
-        glDisable(GL_TEXTURE_2D);
-    }
+            if (t->loaded && t->tex.id != 0) {
+                glDisable(GL_TEXTURE_2D);
+            }
 
-    glDisable(GL_LIGHTING);
+            glDisable(GL_LIGHTING);
 
-    draw_switch_status_light(o->state == 1, pulse);
+            draw_switch_status_light(o->state == 1, pulse);
 
-    if (o->state == 0) {
-        draw_switch_sparks(sc, o);
-    }
+            if (o->state == 0) {
+                draw_switch_sparks(sc, o);
+            }
 
-    glEnable(GL_LIGHTING);
-}
+            glEnable(GL_LIGHTING);
+        }
         else if (is_fence_like_object(o, t)) {
             float fence_brightness = compute_fence_brightness(master_light);
 

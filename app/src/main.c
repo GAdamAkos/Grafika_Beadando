@@ -3,6 +3,7 @@
 #include <GL/glu.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "camera.h"
 #include "help.h"
@@ -187,13 +188,18 @@ static AABB make_player_aabb(const Camera* cam) {
 }
 
 static bool is_near_victory_terminal(const Camera* cam) {
+    const float terminal_x = 0.0f;
+    const float terminal_z = -31.0f;
+    const float max_dx = 2.4f;
+    const float max_dz = 2.8f;
+
     if (!cam) {
         return false;
     }
 
     return (
-        cam->x > -2.2f && cam->x < 2.2f &&
-        cam->z < -29.5f && cam->z > -32.8f
+        cam->x > terminal_x - max_dx && cam->x < terminal_x + max_dx &&
+        cam->z > terminal_z - max_dz && cam->z < terminal_z + max_dz
     );
 }
 
@@ -257,10 +263,171 @@ static void draw_crosshair(int w, int h) {
     }
 
     end_2d();
-
     glPopAttrib();
 }
 
+static void draw_rect_2d(float x0, float y0, float x1, float y1) {
+    glBegin(GL_QUADS);
+    glVertex2f(x0, y0);
+    glVertex2f(x1, y0);
+    glVertex2f(x1, y1);
+    glVertex2f(x0, y1);
+    glEnd();
+}
+
+static unsigned char get_digit_mask(int digit) {
+    switch (digit) {
+        case 0: return 0x3F;
+        case 1: return 0x06;
+        case 2: return 0x5B;
+        case 3: return 0x4F;
+        case 4: return 0x66;
+        case 5: return 0x6D;
+        case 6: return 0x7D;
+        case 7: return 0x07;
+        case 8: return 0x7F;
+        case 9: return 0x6F;
+        default: return 0x00;
+    }
+}
+
+static void draw_digit_7seg(float x, float y, float scale, int digit) {
+    unsigned char mask = get_digit_mask(digit);
+
+    float w = 30.0f * scale;
+    float h = 54.0f * scale;
+    float t = 5.0f * scale;
+    float mid_y = y + h * 0.5f;
+
+    glColor4f(0.08f, 0.16f, 0.14f, 0.28f);
+    draw_rect_2d(x + t, y, x + w - t, y + t);
+    draw_rect_2d(x + w - t, y + t, x + w, mid_y - t * 0.5f);
+    draw_rect_2d(x + w - t, mid_y + t * 0.5f, x + w, y + h - t);
+    draw_rect_2d(x + t, y + h - t, x + w - t, y + h);
+    draw_rect_2d(x, mid_y + t * 0.5f, x + t, y + h - t);
+    draw_rect_2d(x, y + t, x + t, mid_y - t * 0.5f);
+    draw_rect_2d(x + t, mid_y - t * 0.5f, x + w - t, mid_y + t * 0.5f);
+
+    glColor4f(0.35f, 1.0f, 0.72f, 0.95f);
+
+    if (mask & 0x01) draw_rect_2d(x + t, y, x + w - t, y + t);
+    if (mask & 0x02) draw_rect_2d(x + w - t, y + t, x + w, mid_y - t * 0.5f);
+    if (mask & 0x04) draw_rect_2d(x + w - t, mid_y + t * 0.5f, x + w, y + h - t);
+    if (mask & 0x08) draw_rect_2d(x + t, y + h - t, x + w - t, y + h);
+    if (mask & 0x10) draw_rect_2d(x, mid_y + t * 0.5f, x + t, y + h - t);
+    if (mask & 0x20) draw_rect_2d(x, y + t, x + t, mid_y - t * 0.5f);
+    if (mask & 0x40) draw_rect_2d(x + t, mid_y - t * 0.5f, x + w - t, mid_y + t * 0.5f);
+}
+
+static void draw_colon_7seg(float x, float y, float scale) {
+    float s = 4.0f * scale;
+
+    glColor4f(0.35f, 1.0f, 0.72f, 0.95f);
+    draw_rect_2d(x, y + 16.0f * scale, x + s, y + 16.0f * scale + s);
+    draw_rect_2d(x, y + 34.0f * scale, x + s, y + 34.0f * scale + s);
+}
+
+static void draw_dot_7seg(float x, float y, float scale) {
+    float s = 4.0f * scale;
+
+    glColor4f(0.35f, 1.0f, 0.72f, 0.95f);
+    draw_rect_2d(x, y + 50.0f * scale, x + s, y + 50.0f * scale + s);
+}
+
+static void draw_time_display(float x, float y, float scale, double time_sec) {
+    int total_hundredths = (int)(time_sec * 100.0 + 0.5);
+    int minutes = total_hundredths / 6000;
+    int seconds = (total_hundredths / 100) % 60;
+    int hundredths = total_hundredths % 100;
+
+    int m1 = (minutes / 10) % 10;
+    int m2 = minutes % 10;
+    int s1 = seconds / 10;
+    int s2 = seconds % 10;
+    int h1 = hundredths / 10;
+    int h2 = hundredths % 10;
+
+    float dx = 0.0f;
+    float digit_w = 30.0f * scale;
+    float gap = 8.0f * scale;
+
+    draw_digit_7seg(x + dx, y, scale, m1); dx += digit_w + gap;
+    draw_digit_7seg(x + dx, y, scale, m2); dx += digit_w + gap;
+
+    draw_colon_7seg(x + dx, y, scale); dx += 10.0f * scale + gap;
+
+    draw_digit_7seg(x + dx, y, scale, s1); dx += digit_w + gap;
+    draw_digit_7seg(x + dx, y, scale, s2); dx += digit_w + gap;
+
+    draw_dot_7seg(x + dx, y, scale); dx += 10.0f * scale + gap;
+
+    draw_digit_7seg(x + dx, y, scale, h1); dx += digit_w + gap;
+    draw_digit_7seg(x + dx, y, scale, h2);
+}
+
+static void draw_victory_overlay(int w, int h, double final_time_sec) {
+    float scale = 1.45f;
+    float digit_w = 30.0f * scale;
+    float gap = 8.0f * scale;
+    float colon_w = 10.0f * scale;
+    float dot_w = 10.0f * scale;
+    float display_w = digit_w * 6.0f + colon_w + dot_w + gap * 7.0f;
+    float display_h = 54.0f * scale;
+
+    float padding_x = 34.0f;
+    float padding_y = 24.0f;
+
+    float box_w = display_w + padding_x * 2.0f;
+    float box_h = display_h + padding_y * 2.0f;
+
+    float x0 = (w - box_w) * 0.5f;
+    float y0 = h - box_h - 42.0f;
+    float x1 = x0 + box_w;
+    float y1 = y0 + box_h;
+
+    float time_x = x0 + (box_w - display_w) * 0.5f;
+    float time_y = y0 + (box_h - display_h) * 0.5f;
+
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    begin_2d(w, h);
+
+    glColor4f(0.02f, 0.07f, 0.08f, 0.82f);
+    draw_rect_2d(x0, y0, x1, y1);
+
+    glColor4f(0.25f, 0.95f, 0.70f, 0.16f);
+    draw_rect_2d(x0 + 10.0f, y0 + 10.0f, x1 - 10.0f, y0 + 24.0f);
+
+    glColor4f(0.25f, 0.95f, 0.70f, 0.85f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x0, y0);
+    glVertex2f(x1, y0);
+    glVertex2f(x1, y1);
+    glVertex2f(x0, y1);
+    glEnd();
+
+    glColor4f(0.25f, 0.95f, 0.70f, 0.14f);
+    glBegin(GL_LINES);
+    glVertex2f(x0 + 16.0f, y0 + 32.0f);
+    glVertex2f(x1 - 16.0f, y0 + 32.0f);
+
+    glVertex2f(x0 + 16.0f, y1 - 14.0f);
+    glVertex2f(x1 - 16.0f, y1 - 14.0f);
+    glEnd();
+
+    draw_time_display(time_x, time_y, scale, final_time_sec);
+
+    end_2d();
+    glPopAttrib();
+}
 
 static void setup_fog(float density) {
     if (density < 0.0f) {
@@ -304,6 +471,10 @@ int main(int argc, char* argv[]) {
     int picked = -1;
     bool mission_complete = false;
     bool victory_ready = false;
+    bool victory_terminal_picked = false;
+
+    Uint32 run_start_ticks = 0;
+    double final_time_sec = 0.0;
 
     float fog_density = 0.05f;
     bool show_grid = false;
@@ -353,7 +524,7 @@ int main(int argc, char* argv[]) {
     setup_fog(fog_density);
 
     if (!help_init(&help, "../assets/textures/help.bmp")) {
-    printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
+        printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
     }
 
     if (!help_init(&mission_overlay, "../assets/textures/mission_complete.bmp")) {
@@ -363,6 +534,8 @@ int main(int argc, char* argv[]) {
     if (!scene_init(&scene, "../assets/scene.csv")) {
         printf("WARNING: scene not loaded (missing ../assets/scene.csv)\n");
     }
+
+    run_start_ticks = SDL_GetTicks();
 
     {
         Uint32 last_time = SDL_GetTicks();
@@ -394,10 +567,36 @@ int main(int argc, char* argv[]) {
                             scene_interact(scene, picked);
                         }
 
-                        if (victory_ready && !mission_complete && is_near_victory_terminal(&camera)) {
+                        if (victory_ready &&
+                            !mission_complete &&
+                            victory_terminal_picked &&
+                            is_near_victory_terminal(&camera)) {
+                            int total_hundredths;
+                            int minutes;
+                            int seconds;
+                            int hundredths;
+                            char title[128];
+
                             mission_complete = true;
-                            SDL_SetWindowTitle(window, "Substation Night Patrol - MISSION COMPLETE");
-                            printf("MISSION COMPLETE: Terminal activated. Substation restored.\n");
+                            final_time_sec = (SDL_GetTicks() - run_start_ticks) / 1000.0;
+
+                            total_hundredths = (int)(final_time_sec * 100.0 + 0.5);
+                            minutes = total_hundredths / 6000;
+                            seconds = (total_hundredths / 100) % 60;
+                            hundredths = total_hundredths % 100;
+
+                            snprintf(
+                                title,
+                                sizeof(title),
+                                "Substation Night Patrol - MISSION COMPLETE - %02d:%02d.%02d",
+                                minutes, seconds, hundredths
+                            );
+                            SDL_SetWindowTitle(window, title);
+
+                            printf(
+                                "MISSION COMPLETE: Terminal activated. Substation restored. Time: %02d:%02d.%02d\n",
+                                minutes, seconds, hundredths
+                            );
                         }
                     }
 
@@ -488,6 +687,15 @@ int main(int argc, char* argv[]) {
                     picked = -1;
                 }
 
+                victory_terminal_picked = false;
+
+                if (scene && picked >= 0) {
+                    const SceneEntity* picked_entity = scene_get_entity(scene, picked);
+                    if (picked_entity && strcmp(picked_entity->id, "victory_core") == 0) {
+                        victory_terminal_picked = true;
+                    }
+                }
+
                 if (!mission_complete && scene && scene_get_dynamic_light_count(scene) >= 3) {
                     victory_ready = true;
                 }
@@ -523,6 +731,10 @@ int main(int argc, char* argv[]) {
 
                 if (mission_complete && mission_overlay) {
                     help_draw(mission_overlay, window_w, window_h);
+                }
+
+                if (mission_complete) {
+                    draw_victory_overlay(window_w, window_h, final_time_sec);
                 }
             }
 

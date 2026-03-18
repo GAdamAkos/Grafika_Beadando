@@ -7,6 +7,23 @@
 
 typedef struct Scene Scene;
 
+typedef struct SceneEntity {
+    char id[64];
+    char type[32];
+
+    int model_idx;
+    int tex_idx;
+
+    float px, py, pz;
+    float rx, ry, rz;
+    float sx, sy, sz;
+
+    float base_px, base_py, base_pz;
+
+    int state;
+    AABB box;
+} SceneEntity;
+
 bool scene_init(Scene** out_scene, const char* csv_path);
 
 /**
@@ -52,5 +69,11 @@ bool scene_get_dynamic_light(
     float* x, float* y, float* z,
     float* intensity
 );
+
+/**
+ * Get read-only access to a scene entity by index.
+ * Returns NULL if index is invalid.
+ */
+const SceneEntity* scene_get_entity(const Scene* scene, int index);
 
 #endif
