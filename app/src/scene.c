@@ -8,9 +8,9 @@
 #include <SDL2/SDL_opengl.h>
 
 #include "texture.h"
-#include "model.h"
-#include "load.h"
-#include "draw.h"
+#include "../ext/obj/include/model.h"
+#include "../ext/obj/include/load.h"
+#include "../ext/obj/include/draw.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

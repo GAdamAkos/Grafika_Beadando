@@ -1,4 +1,4 @@
-#include "info.h"
+#include "../include/info.h"
 
 #include <stdio.h>
 

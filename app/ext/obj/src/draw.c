@@ -1,4 +1,4 @@
-#include "draw.h"
+#include "../include/draw.h"
 
 #include <GL/gl.h>
 

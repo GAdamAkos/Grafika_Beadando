@@ -1,4 +1,4 @@
-#include "load.h"
+#include "../include/load.h"
 
 #include <stdlib.h>
 

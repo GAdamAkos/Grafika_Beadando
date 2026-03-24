@@ -1,23 +1,32 @@
 APP_NAME = substation
 
 SDK_GCC = C:/c_sdk_220203/MinGW/bin/gcc.exe
+
 ifeq ("$(wildcard $(SDK_GCC))","")
 CC = gcc
 else
 CC = $(SDK_GCC)
 endif
 
-CFLAGS = -Wall -Wextra -Wpedantic -std=c99 \
-	-Iinclude \
-	-Iext/obj/include
+CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude
+
+SRC = \
+	src/main.c \
+	src/camera.c \
+	src/help.c \
+	src/texture.c \
+	src/scene.c
+
+OBJLIB = ext/obj/libobj.a
 
 LDFLAGS = -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lglu32 -lm
 
-SRC = src/main.c src/camera.c src/help.c src/texture.c src/scene.c
-OBJ_SRC = ext/obj/src/model.c ext/obj/src/load.c ext/obj/src/info.c ext/obj/src/draw.c ext/obj/src/transform.c
+all: $(OBJLIB)
+	$(CC) $(CFLAGS) $(SRC) $(OBJLIB) $(LDFLAGS) -o $(APP_NAME).exe
 
-all:
-	$(CC) $(CFLAGS) $(SRC) $(OBJ_SRC) $(LDFLAGS) -o $(APP_NAME).exe
+$(OBJLIB):
+	$(MAKE) -C ext/obj
 
 clean:
-	del /q *.exe 2>nul || exit 0
+	del /q $(APP_NAME).exe 2>nul || exit 0
+	$(MAKE) -C ext/obj clean
