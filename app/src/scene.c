@@ -155,6 +155,8 @@ static void compute_gate_aabb(SceneEntity* o) {
     float c;
     float s;
     float dir;
+    float hinge_x;
+    float hinge_z;
     float center_x;
     float center_z;
     float hx;
@@ -172,8 +174,12 @@ static void compute_gate_aabb(SceneEntity* o) {
     s = sinf(angle);
     dir = (float)gate_hinge_sign(o);
 
-    center_x = o->px + dir * half_w * c;
-    center_z = o->pz - dir * half_w * s;
+    /* base_px/base_pz are treated as the CLOSED CENTER of the gate */
+    hinge_x = o->px - dir * half_w;
+    hinge_z = o->pz;
+
+    center_x = hinge_x + dir * half_w * c;
+    center_z = hinge_z - dir * half_w * s;
 
     hx = fabsf(c) * half_w + fabsf(s) * half_d;
     hz = fabsf(s) * half_w + fabsf(c) * half_d;
@@ -958,17 +964,21 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
         glTranslatef(o->px, o->py, o->pz);
 
         if (is_gate_object(o)) {
-            float hinge_offset = 0.5f * o->sx * (float)gate_hinge_sign(o);
-            glRotatef(o->ry, 0.f, 1.f, 0.f);
-            glTranslatef(hinge_offset, 0.f, 0.f);
-            glScalef(o->sx, o->sy, o->sz);
-        }
-        else {
-            glRotatef(o->rx, 1.f, 0.f, 0.f);
-            glRotatef(o->ry, 0.f, 1.f, 0.f);
-            glRotatef(o->rz, 0.f, 0.f, 1.f);
-            glScalef(o->sx, o->sy, o->sz);
-        }
+    float hinge_offset = 0.5f * o->sx * (float)gate_hinge_sign(o);
+
+    /* Keep CSV position as the CLOSED CENTER of the gate,
+       but rotate around the proper side edge (hinge). */
+    glTranslatef(-hinge_offset, 0.f, 0.f);
+    glRotatef(o->ry, 0.f, 1.f, 0.f);
+    glTranslatef(hinge_offset, 0.f, 0.f);
+    glScalef(o->sx, o->sy, o->sz);
+}
+else {
+    glRotatef(o->rx, 1.f, 0.f, 0.f);
+    glRotatef(o->ry, 0.f, 1.f, 0.f);
+    glRotatef(o->rz, 0.f, 0.f, 1.f);
+    glScalef(o->sx, o->sy, o->sz);
+}
 
         if (str_ieq(o->type, "lamp")) {
             int active = is_lamp_active(sc, o);
