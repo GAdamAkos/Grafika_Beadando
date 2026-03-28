@@ -189,9 +189,9 @@ static AABB make_player_aabb(const Camera* cam) {
 
 static bool is_near_victory_terminal(const Camera* cam) {
     const float terminal_x = 0.0f;
-    const float terminal_z = -31.0f;
-    const float max_dx = 2.4f;
-    const float max_dz = 2.8f;
+    const float terminal_z = -23.10f;
+    const float max_dx = 3.0f;
+    const float max_dz = 3.8f;
 
     if (!cam) {
         return false;
@@ -299,7 +299,7 @@ static void draw_digit_7seg(float x, float y, float scale, int digit) {
     float t = 5.0f * scale;
     float mid_y = y + h * 0.5f;
 
-    glColor4f(0.08f, 0.16f, 0.14f, 0.28f);
+    glColor4f(0.16f, 0.10f, 0.06f, 0.12f);
     draw_rect_2d(x + t, y, x + w - t, y + t);
     draw_rect_2d(x + w - t, y + t, x + w, mid_y - t * 0.5f);
     draw_rect_2d(x + w - t, mid_y + t * 0.5f, x + w, y + h - t);
@@ -308,7 +308,7 @@ static void draw_digit_7seg(float x, float y, float scale, int digit) {
     draw_rect_2d(x, y + t, x + t, mid_y - t * 0.5f);
     draw_rect_2d(x + t, mid_y - t * 0.5f, x + w - t, mid_y + t * 0.5f);
 
-    glColor4f(0.35f, 1.0f, 0.72f, 0.95f);
+    glColor4f(0.95f, 0.68f, 0.28f, 0.90f);
 
     if (mask & 0x01) draw_rect_2d(x + t, y, x + w - t, y + t);
     if (mask & 0x02) draw_rect_2d(x + w - t, y + t, x + w, mid_y - t * 0.5f);
@@ -322,7 +322,7 @@ static void draw_digit_7seg(float x, float y, float scale, int digit) {
 static void draw_colon_7seg(float x, float y, float scale) {
     float s = 4.0f * scale;
 
-    glColor4f(0.35f, 1.0f, 0.72f, 0.95f);
+    glColor4f(0.95f, 0.68f, 0.28f, 0.90f);
     draw_rect_2d(x, y + 16.0f * scale, x + s, y + 16.0f * scale + s);
     draw_rect_2d(x, y + 34.0f * scale, x + s, y + 34.0f * scale + s);
 }
@@ -330,7 +330,7 @@ static void draw_colon_7seg(float x, float y, float scale) {
 static void draw_dot_7seg(float x, float y, float scale) {
     float s = 4.0f * scale;
 
-    glColor4f(0.35f, 1.0f, 0.72f, 0.95f);
+    glColor4f(0.95f, 0.68f, 0.28f, 0.90f);
     draw_rect_2d(x, y + 50.0f * scale, x + s, y + 50.0f * scale + s);
 }
 
@@ -365,6 +365,90 @@ static void draw_time_display(float x, float y, float scale, double time_sec) {
     draw_digit_7seg(x + dx, y, scale, h2);
 }
 
+static bool get_glyph_5x7(char c, unsigned char out[7]) {
+    memset(out, 0, 7);
+
+    switch (c) {
+        case 'F':
+            out[0] = 0x1F; out[1] = 0x10; out[2] = 0x10; out[3] = 0x1E;
+            out[4] = 0x10; out[5] = 0x10; out[6] = 0x10; return true;
+        case 'H':
+            out[0] = 0x11; out[1] = 0x11; out[2] = 0x11; out[3] = 0x1F;
+            out[4] = 0x11; out[5] = 0x11; out[6] = 0x11; return true;
+        case 'E':
+            out[0] = 0x1F; out[1] = 0x10; out[2] = 0x10; out[3] = 0x1E;
+            out[4] = 0x10; out[5] = 0x10; out[6] = 0x1F; return true;
+        case 'L':
+            out[0] = 0x10; out[1] = 0x10; out[2] = 0x10; out[3] = 0x10;
+            out[4] = 0x10; out[5] = 0x10; out[6] = 0x1F; return true;
+        case 'P':
+            out[0] = 0x1E; out[1] = 0x11; out[2] = 0x11; out[3] = 0x1E;
+            out[4] = 0x10; out[5] = 0x10; out[6] = 0x10; return true;
+        case '1':
+            out[0] = 0x04; out[1] = 0x0C; out[2] = 0x04; out[3] = 0x04;
+            out[4] = 0x04; out[5] = 0x04; out[6] = 0x0E; return true;
+        case ' ':
+            return true;
+        default:
+            return false;
+    }
+}
+
+static void draw_text_5x7(float x, float y, float scale, const char* text) {
+    float cell = 4.0f * scale;
+    float advance = cell * 6.0f;
+
+    for (size_t i = 0; text[i] != '\0'; i++) {
+        unsigned char rows[7];
+        if (get_glyph_5x7(text[i], rows)) {
+            for (int row = 0; row < 7; row++) {
+                for (int col = 0; col < 5; col++) {
+                    if (rows[row] & (1 << (4 - col))) {
+                        float x0 = x + col * cell;
+                        float y0 = y + row * cell;
+                        draw_rect_2d(x0, y0, x0 + cell, y0 + cell);
+                    }
+                }
+            }
+        }
+        x += advance;
+    }
+}
+
+static void draw_bottom_hud(int w, int h, double elapsed_time_sec) {
+    float bar_h = 42.0f;
+    float pad = 12.0f;
+    float time_scale = 0.46f;
+    float time_w = (30.0f * time_scale) * 6.0f + (10.0f * time_scale) * 2.0f + (8.0f * time_scale) * 7.0f;
+    float time_x = w - time_w - 18.0f;
+    float time_y = h - bar_h + 6.0f;
+
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    begin_2d(w, h);
+
+    glColor4f(0.10f, 0.08f, 0.07f, 0.42f);
+    draw_rect_2d(0.0f, h - bar_h, (float)w, (float)h);
+
+    glColor4f(0.85f, 0.45f, 0.12f, 0.10f);
+    draw_rect_2d(0.0f, h - bar_h, (float)w, h - bar_h + 4.0f);
+
+    glColor4f(0.95f, 0.68f, 0.28f, 0.78f);
+    draw_text_5x7(pad, h - bar_h + 8.0f, 1.0f, "F1 HELP");
+
+    draw_time_display(time_x, time_y, time_scale, elapsed_time_sec);
+
+    end_2d();
+    glPopAttrib();
+}
+
 static void draw_victory_overlay(int w, int h, double final_time_sec) {
     float scale = 1.45f;
     float digit_w = 30.0f * scale;
@@ -381,7 +465,7 @@ static void draw_victory_overlay(int w, int h, double final_time_sec) {
     float box_h = display_h + padding_y * 2.0f;
 
     float x0 = (w - box_w) * 0.5f;
-    float y0 = h - box_h - 42.0f;
+    float y0 = 36.0f;
     float x1 = x0 + box_w;
     float y1 = y0 + box_h;
 
@@ -399,13 +483,13 @@ static void draw_victory_overlay(int w, int h, double final_time_sec) {
 
     begin_2d(w, h);
 
-    glColor4f(0.02f, 0.07f, 0.08f, 0.82f);
+    glColor4f(0.10f, 0.08f, 0.07f, 0.52f);
     draw_rect_2d(x0, y0, x1, y1);
 
-    glColor4f(0.25f, 0.95f, 0.70f, 0.16f);
+    glColor4f(0.95f, 0.68f, 0.28f, 0.10f);
     draw_rect_2d(x0 + 10.0f, y0 + 10.0f, x1 - 10.0f, y0 + 24.0f);
 
-    glColor4f(0.25f, 0.95f, 0.70f, 0.85f);
+    glColor4f(0.95f, 0.68f, 0.28f, 0.85f);
     glLineWidth(2.0f);
     glBegin(GL_LINE_LOOP);
     glVertex2f(x0, y0);
@@ -414,7 +498,7 @@ static void draw_victory_overlay(int w, int h, double final_time_sec) {
     glVertex2f(x0, y1);
     glEnd();
 
-    glColor4f(0.25f, 0.95f, 0.70f, 0.14f);
+    glColor4f(0.95f, 0.68f, 0.28f, 0.10f);
     glBegin(GL_LINES);
     glVertex2f(x0 + 16.0f, y0 + 32.0f);
     glVertex2f(x1 - 16.0f, y0 + 32.0f);
@@ -687,19 +771,24 @@ int main(int argc, char* argv[]) {
                 } else {
                     picked = -1;
                 }
-
-                victory_terminal_picked = false;
-
-                if (scene && picked >= 0) {
-                    const SceneEntity* picked_entity = scene_get_entity(scene, picked);
-                    if (picked_entity && strcmp(picked_entity->id, "victory_core") == 0) {
-                        victory_terminal_picked = true;
-                    }
-                }
-
+                
                 if (!mission_complete && scene && scene_get_dynamic_light_count(scene) >= 3) {
                     victory_ready = true;
                 }
+                
+                victory_terminal_picked = false;
+                
+                if (scene && picked >= 0) {
+                    const SceneEntity* picked_entity = scene_get_entity(scene, picked);
+                
+                    if (picked_entity && strcmp(picked_entity->id, "victory_core") == 0) {
+                        if (victory_ready && is_near_victory_terminal(&camera)) {
+                            victory_terminal_picked = true;
+                        } else {
+                            picked = -1;
+                        }
+                    }
+}
             }
 
             glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
@@ -728,7 +817,12 @@ int main(int argc, char* argv[]) {
             if (show_help && help) {
                 help_draw(help, window_w, window_h);
             } else {
+                double hud_time_sec = mission_complete
+                    ? final_time_sec
+                    : (SDL_GetTicks() - run_start_ticks) / 1000.0;
+
                 draw_crosshair(window_w, window_h);
+                draw_bottom_hud(window_w, window_h, hud_time_sec);
 
                 if (mission_complete && mission_overlay) {
                     help_draw(mission_overlay, window_w, window_h);

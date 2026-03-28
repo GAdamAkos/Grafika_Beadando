@@ -320,6 +320,7 @@ static void draw_wall_lamp_glow(const SceneEntity* o, float pulse, int active) {
 
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
+    glDisable(GL_BLEND);
 
     if (active) {
         glColor3f(1.00f * pulse, 0.92f * pulse, 0.55f * pulse);

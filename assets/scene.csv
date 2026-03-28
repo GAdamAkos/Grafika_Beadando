@@ -3,7 +3,7 @@ id,type,model,texture,px,py,pz,rx,ry,rz,sx,sy,sz
 ground_1,ground,../assets/models/cube.obj,../assets/textures/ground.bmp,0,-1.0,-7.5,0,0,0,30,1,46
 
 # ----- Ceiling -----
-ceiling_1,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,4.3,0,0,0,0,27.5,0.25,27.5
+ceiling_1,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,4.3,-7.5,0,0,0,27.5,0.25,42.0
 
 # ----- Switches (repair objectives on 3 different walls) -----
 switch_1,switch,../assets/models/cube.obj,../assets/textures/switch_panel.bmp,-7.5,1.2,-13.28,0,0,0,0.9,1.1,0.12
@@ -15,24 +15,21 @@ lamp_1,lamp,../assets/models/cube.obj,../assets/textures/lamp_texture.bmp,-7.5,2
 lamp_2,lamp,../assets/models/cube.obj,../assets/textures/lamp_texture.bmp,-13.08,2.45,0,0,90,0,0.55,0.30,0.18
 lamp_3,lamp,../assets/models/cube.obj,../assets/textures/lamp_texture.bmp,13.08,2.45,6,0,-90,0,0.55,0.30,0.18
 
-# ----- Workshop corner -----
-# Refined workbench
-bench_top,obstacle,../assets/models/cube.obj,../assets/textures/gate_texture.bmp,-7.2,0.33,-7.8,0,0,0,2.20,0.14,1.10
-bench_side_l,obstacle,../assets/models/cube.obj,../assets/textures/gate_texture.bmp,-8.24,-0.12,-7.8,0,0,0,0.12,0.76,1.00
-bench_side_r,obstacle,../assets/models/cube.obj,../assets/textures/gate_texture.bmp,-6.16,-0.12,-7.8,0,0,0,0.12,0.76,1.00
-bench_back,obstacle,../assets/models/cube.obj,../assets/textures/gate_texture.bmp,-7.2,-0.12,-8.25,0,0,0,1.96,0.76,0.10
-bench_shelf,obstacle,../assets/models/cube.obj,../assets/textures/gate_texture.bmp,-7.2,-0.24,-7.8,0,0,0,1.98,0.08,0.74
+# ----- Workshop corner (south-west corner, slightly larger furniture) -----
+# Shelf along the south wall
+shelf_side_l,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-13.00,0.15,12.00,0,0,0,0.16,2.70,1.05
+shelf_side_r,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-11.40,0.15,12.00,0,0,0,0.16,2.70,1.05
+shelf_board_bottom,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-12.20,-0.58,12.00,0,0,0,1.75,0.10,1.00
+shelf_board_mid,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-12.20,0.12,12.00,0,0,0,1.75,0.10,1.00
+shelf_board_top,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-12.20,0.80,12.00,0,0,0,1.75,0.10,1.00
 
-# Refined shelf
-shelf_side_l,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-10.80,0.50,-6.4,0,0,0,0.14,2.00,0.95
-shelf_side_r,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-9.20,0.50,-6.4,0,0,0,0.14,2.00,0.95
-shelf_board_bottom,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-10.0,-0.30,-6.4,0,0,0,1.55,0.08,0.90
-shelf_board_mid,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-10.0,0.38,-6.4,0,0,0,1.55,0.08,0.90
-shelf_board_top,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-10.0,1.06,-6.4,0,0,0,1.55,0.08,0.90
+# Workbench next to the shelf, same wall line
+bench_top,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-9.70,0.23,12.05,0,0,0,2.45,0.18,1.22
+bench_side_l,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-10.74,-0.35,12.05,0,0,0,0.14,1.45,1.08
+bench_side_r,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-8.66,-0.35,12.05,0,0,0,0.14,1.45,1.08
+bench_back,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-9.70,-0.35,12.55,0,0,0,2.15,1.45,0.12
+bench_shelf,obstacle,../assets/models/cube.obj,../assets/textures/furniture.bmp,-9.70,-0.36,12.05,0,0,0,2.15,0.10,0.82
 
-# Storage boxes
-box_1,obstacle,../assets/models/cube.obj,../assets/textures/switch_panel.bmp,-8.9,-0.325,-6.0,0,0,0,0.35,0.35,0.35
-box_2,obstacle,../assets/models/cube.obj,../assets/textures/switch_panel.bmp,-8.45,-0.36,-5.8,0,20,0,0.28,0.28,0.28
 
 # ======================================================
 # MAIN ROOM (reduced size)
@@ -84,8 +81,6 @@ wall_e_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,13.5,1.
 # Exact depth = 15
 # ======================================================
 
-# ----- Ceiling behind the gate -----
-ceiling_2,obstacle,../assets/models/cube.obj,../assets/textures/ceiling.bmp,0,4.3,-21.0,0,0,0,27.5,0.25,15.0
 
 # ----- Victory room west wall -----
 victory_w_1,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,-13.5,1.6,-15.75,0,0,0,0.25,5.2,4.5
@@ -107,6 +102,7 @@ victory_n_4,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,2.25
 victory_n_5,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,6.75,1.6,-28.5,0,0,0,4.5,5.2,0.25
 victory_n_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,11.25,1.6,-28.5,0,0,0,4.5,5.2,0.25
 
-# ----- Central terminal / objective block -----
-victory_console,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,0,0.2,-23.0,0,0,0,1.8,2.2,1.0
-victory_core,terminal,../assets/models/cube.obj,../assets/textures/switch_panel.bmp,0,1.8,-22.45,0,0,0,0.9,0.7,0.12
+# ----- Final terminal setup (lowered further, same size) -----
+victory_pedestal,obstacle,../assets/models/cube.obj,../assets/textures/tileable_worn_steel_texture.bmp,0,-0.18,-23.10,0,0,0,2.40,1.20,1.60
+victory_panel_back,obstacle,../assets/models/cube.obj,../assets/textures/tileable_worn_steel_texture.bmp,0,1.05,-23.70,0,0,0,2.00,1.40,0.18
+victory_core,terminal,../assets/models/cube.obj,../assets/textures/control_panel.bmp,0,1.09,-23.52,0,0,0,1.20,0.95,0.12
