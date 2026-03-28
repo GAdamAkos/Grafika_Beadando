@@ -30,7 +30,7 @@ A projekt az alábbi 5 többletfunkciót tartalmazza:
 2. **Ütközésvizsgálat**
 3. **Objektumkijelölés**
 4. **Dinamikus fények**
-5. **Árnyékszerű hatás**
+5. **Stencil buffer alapú outline kiemelés**
 
 ---
 
