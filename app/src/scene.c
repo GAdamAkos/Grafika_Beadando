@@ -1088,16 +1088,27 @@ void scene_draw(Scene* sc, int picked_index, float master_light) {
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
     for (int i = 0; i < sc->obj_count; i++) {
-        if (i == picked_index) {
-            continue;
-        }
-
-        draw_scene_entity(sc, &sc->objects[i], master_light);
+    if (i == picked_index) {
+        continue;
     }
 
+    if (strstr(sc->objects[i].id, "_collision") != NULL) {
+        continue;
+    }
+
+    draw_scene_entity(sc, &sc->objects[i], master_light);
+}
+
     if (picked_index >= 0 && picked_index < sc->obj_count) {
-        SceneEntity* o = &sc->objects[picked_index];
-        ModelEntry* m = &sc->models[o->model_idx];
+    SceneEntity* o = &sc->objects[picked_index];
+
+    if (strstr(o->id, "_collision") != NULL) {
+        glStencilMask(0xFF);
+        glDisable(GL_STENCIL_TEST);
+        return;
+    }
+
+    ModelEntry* m = &sc->models[o->model_idx];
 
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 1, 0xFF);

@@ -106,3 +106,6 @@ victory_n_6,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,11.2
 victory_pedestal,obstacle,../assets/models/cube.obj,../assets/textures/tileable_worn_steel_texture.bmp,0,-0.18,-23.10,0,0,0,2.40,1.20,1.60
 victory_panel_back,obstacle,../assets/models/cube.obj,../assets/textures/tileable_worn_steel_texture.bmp,0,1.05,-23.70,0,0,0,2.00,1.40,0.18
 victory_core,terminal,../assets/models/cube.obj,../assets/textures/control_panel.bmp,0,1.09,-23.52,0,0,0,1.20,0.95,0.12
+
+crate_test,obstacle,../assets/models/box_crate_triangulated.obj,../assets/textures/box_crate_basecolor.bmp,12.10,-0.90,12.10,0,-25,0,1.10,1.10,1.10
+crate_test_collision,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.10,0.05,12.10,0,0,0,1.25,1.10,1.25
