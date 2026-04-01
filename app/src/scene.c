@@ -920,31 +920,6 @@ const SceneEntity* scene_get_entity(const Scene* sc, int index) {
     return &sc->objects[index];
 }
 
-static void draw_aabb_lines(const AABB* b) {
-    float x0 = b->min_x, x1 = b->max_x;
-    float y0 = b->min_y, y1 = b->max_y;
-    float z0 = b->min_z, z1 = b->max_z;
-
-    glBegin(GL_LINES);
-
-    glVertex3f(x0, y0, z0); glVertex3f(x1, y0, z0);
-    glVertex3f(x1, y0, z0); glVertex3f(x1, y0, z1);
-    glVertex3f(x1, y0, z1); glVertex3f(x0, y0, z1);
-    glVertex3f(x0, y0, z1); glVertex3f(x0, y0, z0);
-
-    glVertex3f(x0, y1, z0); glVertex3f(x1, y1, z0);
-    glVertex3f(x1, y1, z0); glVertex3f(x1, y1, z1);
-    glVertex3f(x1, y1, z1); glVertex3f(x0, y1, z1);
-    glVertex3f(x0, y1, z1); glVertex3f(x0, y1, z0);
-
-    glVertex3f(x0, y0, z0); glVertex3f(x0, y1, z0);
-    glVertex3f(x1, y0, z0); glVertex3f(x1, y1, z0);
-    glVertex3f(x1, y0, z1); glVertex3f(x1, y1, z1);
-    glVertex3f(x0, y0, z1); glVertex3f(x0, y1, z1);
-
-    glEnd();
-}
-
 static void apply_entity_transform(const SceneEntity* o) {
     glTranslatef(o->px, o->py, o->pz);
 

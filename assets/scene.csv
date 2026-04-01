@@ -109,3 +109,18 @@ victory_core,terminal,../assets/models/cube.obj,../assets/textures/control_panel
 
 crate_test,obstacle,../assets/models/box_crate_triangulated.obj,../assets/textures/box_crate_basecolor.bmp,12.10,-0.90,12.10,0,-25,0,1.10,1.10,1.10
 crate_test_collision,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.10,0.05,12.10,0,0,0,1.25,1.10,1.25
+
+crate_test_2,obstacle,../assets/models/box_crate_triangulated.obj,../assets/textures/box_crate_basecolor.bmp,10.10,-0.90,12.10,0,-25,0,1.10,1.10,1.10
+crate_test_2_collision,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,10.10,0.05,12.10,0,0,0,1.25,1.10,1.25
+
+crate_test_3,obstacle,../assets/models/box_crate_triangulated.obj,../assets/textures/box_crate_basecolor.bmp,10.10,0.65,12.10,0,-25,0,1.10,1.10,1.10
+crate_test_3_collision,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,10.10,1.15,12.10,0,0,0,1.25,1.10,1.25
+
+crate_test_4,obstacle,../assets/models/box_crate_triangulated.obj,../assets/textures/box_crate_basecolor.bmp,12.10,-0.90,10.10,0,-25,0,1.10,1.10,1.10
+crate_test_4_collision,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.10,0.05,10.10,0,0,0,1.25,1.10,1.25
+
+crate_test_5,obstacle,../assets/models/box_crate_triangulated.obj,../assets/textures/box_crate_basecolor.bmp,10.10,-0.90,10.10,0,-25,0,1.10,1.10,1.10
+crate_test_5_collision,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,10.10,0.05,10.10,0,0,0,1.25,1.10,1.25
+
+crate_test,obstacle,../assets/models/box_crate_triangulated.obj,../assets/textures/box_crate_basecolor.bmp,12.10,0.65,12.10,1,-25,0,1.10,1.10,1.10
+crate_test_collision,obstacle,../assets/models/cube.obj,../assets/textures/fence.bmp,12.10,0.05,12.10,0,0,0,1.25,1.10,1.25
