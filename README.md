@@ -85,7 +85,7 @@ A projekt az alábbi asseteket használja:
 
 
 **Assets ZIP link:**  
-[Ide kerül a végleges link.](https://drive.google.com/file/d/1P-zYNdb-dVqMzteyIKPh2GgfRCUkWvRz/view?usp=sharing)
+[Open link](https://drive.google.com/file/d/1P-zYNdb-dVqMzteyIKPh2GgfRCUkWvRz/view?usp=sharing)
 
 ---
 
