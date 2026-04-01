@@ -83,7 +83,6 @@ A projekt az alábbi asseteket használja:
 - textúrák (`.bmp`)
 - jelenetleírás (`scene.csv`)
 
-
 **Assets ZIP link:**  
 [Open link](https://drive.google.com/file/d/1P-zYNdb-dVqMzteyIKPh2GgfRCUkWvRz/view?usp=sharing)
 
@@ -91,13 +90,23 @@ A projekt az alábbi asseteket használja:
 
 ## Fordítás és futtatás
 
-Lépj be az `app` mappába, majd futtasd:
+A projektet a `c_sdk_220203.zip` csomagból kicsomagolt fejlesztői környezetben érdemes használni, és a repót ezen belül ajánlott elhelyezni.
+
+Ajánlott mappaszerkezet:
+
+```text
+C:\c_sdk_220203\Beadando_Substation\Grafika_Beadando
+```
+
+A program fordítása az `app` mappában történik:
 
 ```bash
 make
 ```
 
-Windows alatt a létrejövő futtatható állomány jellemzően:
+A futtatás szintén az `app` mappából ajánlott, mert a program relatív útvonalakkal tölti be az asseteket (`../assets/...`).
+
+Windows alatt a futtatás:
 
 ```bash
 substation.exe
