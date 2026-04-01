@@ -83,11 +83,9 @@ A projekt az alábbi asseteket használja:
 - textúrák (`.bmp`)
 - jelenetleírás (`scene.csv`)
 
-A végleges beadásnál az `assets` mappa külön ZIP-ben kerül megosztásra.  
-Az assets letöltési linkje ide kerül majd:
 
 **Assets ZIP link:**  
-Ide kerül a végleges link.
+[Ide kerül a végleges link.](https://drive.google.com/file/d/1P-zYNdb-dVqMzteyIKPh2GgfRCUkWvRz/view?usp=sharing)
 
 ---
 
