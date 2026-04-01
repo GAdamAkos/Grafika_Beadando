@@ -549,7 +549,6 @@ int main(int argc, char* argv[]) {
 
     bool show_help = false;
     HelpOverlay* help = NULL;
-    HelpOverlay* mission_overlay = NULL;
 
     Scene* scene = NULL;
     int picked = -1;
@@ -610,10 +609,6 @@ int main(int argc, char* argv[]) {
 
     if (!help_init(&help, "../assets/textures/help.bmp")) {
         printf("WARNING: help overlay not loaded (missing ../assets/textures/help.bmp)\n");
-    }
-
-    if (!help_init(&mission_overlay, "../assets/textures/mission_complete.bmp")) {
-        printf("WARNING: mission overlay not loaded (missing ../assets/textures/mission_complete.bmp)\n");
     }
 
     if (!scene_init(&scene, "../assets/scene.csv")) {
@@ -824,9 +819,7 @@ int main(int argc, char* argv[]) {
                 draw_crosshair(window_w, window_h);
                 draw_bottom_hud(window_w, window_h, hud_time_sec);
 
-                if (mission_complete && mission_overlay) {
-                    help_draw(mission_overlay, window_w, window_h);
-                }
+                
 
                 if (mission_complete) {
                     draw_victory_overlay(window_w, window_h, final_time_sec);
@@ -839,7 +832,6 @@ int main(int argc, char* argv[]) {
 
     scene_destroy(scene);
     help_destroy(help);
-    help_destroy(mission_overlay);
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
