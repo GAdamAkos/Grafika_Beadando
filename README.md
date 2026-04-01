@@ -118,6 +118,9 @@ substation.exe
 
 A projekt külső OBJ modellbetöltő kódot használ az `app/ext/obj` könyvtárban.
 
+Ennek alapja a tantárgyhoz kiadott `me-courses` anyagban található
+`grafika/utils/obj` segédkönyvtár, amely a féléves feladathoz
+illesztve került beépítésre és részben módosításra.
 ---
 
 ## Összegzés
