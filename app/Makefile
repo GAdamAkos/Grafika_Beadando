@@ -8,14 +8,20 @@ else
 CC = $(SDK_GCC)
 endif
 
-CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude
+CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude -Iext/obj/include
 
 SRC = \
 	src/main.c \
 	src/camera.c \
 	src/help.c \
 	src/texture.c \
-	src/scene.c
+	src/app_render.c \
+	src/ui_hud.c \
+	src/scene_loader.c \
+	src/scene_update.c \
+	src/scene_query.c \
+	src/scene_effects.c \
+	src/scene_render.c
 
 OBJLIB = ext/obj/libobj.a
 
